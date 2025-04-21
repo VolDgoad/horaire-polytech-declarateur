@@ -1,0 +1,104 @@
+
+import { Link } from 'react-router-dom';
+import { useDeclarations } from '@/context/DeclarationContext';
+import { useAuth } from '@/context/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DeclarationStatus } from '@/types';
+
+export function RecentDeclarations() {
+  const { user } = useAuth();
+  const { userDeclarations, pendingDeclarations } = useDeclarations();
+  
+  // Enseignant voit ses propres déclarations récentes
+  // Admin voit les déclarations en attente récentes
+  const declarations = user?.role === 'enseignant' 
+    ? userDeclarations 
+    : pendingDeclarations;
+  
+  const recentDeclarations = declarations
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 5);
+  
+  // Fonction pour obtenir le badge approprié pour chaque statut
+  const getStatusBadge = (status: DeclarationStatus) => {
+    switch (status) {
+      case 'draft':
+        return <Badge variant="outline">Brouillon</Badge>;
+      case 'submitted':
+        return <Badge variant="secondary">Soumise</Badge>;
+      case 'verified':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Vérifiée</Badge>;
+      case 'approved':
+        return <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100">Approuvée</Badge>;
+      case 'validated':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">Validée</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejetée</Badge>;
+      default:
+        return <Badge variant="outline">Inconnu</Badge>;
+    }
+  };
+  
+  const getTargetUrl = (declaration: any) => {
+    if (user?.role === 'enseignant') {
+      return `/declarations/${declaration.id}`;
+    } else {
+      return `/validations/${declaration.id}`;
+    }
+  };
+  
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          {user?.role === 'enseignant' ? 'Mes déclarations récentes' : 'Déclarations à traiter'}
+        </CardTitle>
+        <CardDescription>
+          {user?.role === 'enseignant' 
+            ? 'Vos déclarations les plus récentes' 
+            : 'Déclarations en attente de traitement'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-2">
+        {recentDeclarations.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            {user?.role === 'enseignant' 
+              ? 'Vous n\'avez pas encore de déclaration' 
+              : 'Aucune déclaration en attente'}
+          </div>
+        ) : (
+          <div>
+            {recentDeclarations.map((declaration) => (
+              <div key={declaration.id} className="flex items-center justify-between p-4 hover:bg-accent rounded-md transition-colors">
+                <div>
+                  <div className="font-medium">{declaration.course}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(declaration.date).toLocaleDateString()} • {declaration.hours}h
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {getStatusBadge(declaration.status)}
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to={getTargetUrl(declaration)}>
+                      {user?.role === 'enseignant' ? 'Détails' : 'Traiter'}
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ))}
+            
+            <div className="flex justify-center mt-4">
+              <Button variant="outline" asChild>
+                <Link to={user?.role === 'enseignant' ? '/declarations' : '/validations'}>
+                  Voir tout
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
