@@ -25,21 +25,26 @@ export function DeclarationForm() {
   const [department, setDepartment] = useState(user?.department || '');
   const [course, setCourse] = useState('');
   const [date, setDate] = useState('');
-  const [hours, setHours] = useState(0);
+  const [hoursCM, setHoursCM] = useState<number | undefined>(undefined);
+  const [hoursTD, setHoursTD] = useState<number | undefined>(undefined);
+  const [hoursTP, setHoursTP] = useState<number | undefined>(undefined);
   const [notes, setNotes] = useState('');
   const [isDraft, setIsDraft] = useState(true);
 
   const departmentCourses = courses.filter(c => c.departmentId === departments.find(d => d.name === department)?.id);
 
+  // Calculate total hours
+  const totalHours = (hoursCM || 0) + (hoursTD || 0) + (hoursTP || 0);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!department || !course || !date || hours <= 0) {
+    if (!department || !course || !date || totalHours <= 0) {
       toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
     
-    if (hours > 8) {
+    if (totalHours > 8) {
       toast.error('Le nombre d\'heures ne peut pas dépasser 8 heures par jour');
       return;
     }
@@ -49,8 +54,11 @@ export function DeclarationForm() {
         department,
         course,
         date,
-        hours,
-        // Remove notes from here as it's not in the type
+        hoursCM,
+        hoursTD,
+        hoursTP,
+        hours: totalHours,
+        notes
       });
       
       if (!isDraft) {
@@ -131,16 +139,49 @@ export function DeclarationForm() {
               />
             </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="hoursCM">Heures CM</Label>
+                <Input
+                  id="hoursCM"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={hoursCM === undefined ? '' : hoursCM}
+                  onChange={(e) => setHoursCM(e.target.value ? parseFloat(e.target.value) : undefined)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="hoursTD">Heures TD</Label>
+                <Input
+                  id="hoursTD"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={hoursTD === undefined ? '' : hoursTD}
+                  onChange={(e) => setHoursTD(e.target.value ? parseFloat(e.target.value) : undefined)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="hoursTP">Heures TP</Label>
+                <Input
+                  id="hoursTP"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={hoursTP === undefined ? '' : hoursTP}
+                  onChange={(e) => setHoursTP(e.target.value ? parseFloat(e.target.value) : undefined)}
+                />
+              </div>
+            </div>
+            
             <div>
-              <Label htmlFor="hours">Nombre d'heures</Label>
+              <Label htmlFor="totalHours">Nombre total d'heures</Label>
               <Input
-                id="hours"
+                id="totalHours"
                 type="number"
-                min="0"
-                max="8"
-                step="0.5"
-                value={hours}
-                onChange={(e) => setHours(parseFloat(e.target.value))}
+                value={totalHours}
+                disabled
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Maximum 8 heures par jour
