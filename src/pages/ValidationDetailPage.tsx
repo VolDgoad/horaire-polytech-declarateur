@@ -47,17 +47,15 @@ export default function ValidationDetailPage() {
   
   const getStatusBadge = (status: DeclarationStatus) => {
     switch (status) {
-      case 'draft':
-        return <Badge variant="outline">Brouillon</Badge>;
-      case 'submitted':
-        return <Badge variant="secondary">Soumise</Badge>;
-      case 'verified':
+      case 'en_attente':
+        return <Badge variant="outline">En attente</Badge>;
+      case 'verifiee':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Vérifiée</Badge>;
-      case 'approved':
+      case 'approuvee':
         return <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100">Approuvée</Badge>;
-      case 'validated':
+      case 'validee':
         return <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">Validée</Badge>;
-      case 'rejected':
+      case 'refusee':
         return <Badge variant="destructive">Rejetée</Badge>;
       default:
         return <Badge variant="outline">Inconnu</Badge>;
@@ -65,22 +63,22 @@ export default function ValidationDetailPage() {
   };
 
   const getNextStatus = () => {
-    if (user?.role === 'scolarite' && declaration.status === 'submitted') {
-      return 'verified';
-    } else if (user?.role === 'chef_departement' && declaration.status === 'verified') {
-      return 'approved';
-    } else if (user?.role === 'directrice' && declaration.status === 'approved') {
-      return 'validated';
+    if (user?.role === 'Scolarité' && declaration.status === 'en_attente') {
+      return 'verifiee';
+    } else if (user?.role === 'Chef de département' && declaration.status === 'verifiee') {
+      return 'approuvee';
+    } else if (user?.role === 'Directrice des études' && declaration.status === 'approuvee') {
+      return 'validee';
     }
     return null;
   };
   
   const getValidationButtonText = () => {
-    if (user?.role === 'scolarite') {
+    if (user?.role === 'Scolarité') {
       return 'Vérifier';
-    } else if (user?.role === 'chef_departement') {
+    } else if (user?.role === 'Chef de département') {
       return 'Approuver';
-    } else if (user?.role === 'directrice') {
+    } else if (user?.role === 'Directrice des études') {
       return 'Valider';
     }
     return 'Valider';
@@ -106,7 +104,7 @@ export default function ValidationDetailPage() {
       return;
     }
     
-    updateStatus(declaration.id, 'rejected', rejectionReason);
+    updateStatus(declaration.id, 'refusee', rejectionReason);
     setIsRejectDialogOpen(false);
     navigate('/validations');
   };

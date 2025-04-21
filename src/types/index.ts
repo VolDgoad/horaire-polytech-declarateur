@@ -111,3 +111,31 @@ export interface Stats {
   approvedDeclarations: number;
   rejectedDeclarations: number;
 }
+
+// Helper mapping for UI purposes
+export const statusDisplayMap = {
+  'en_attente': 'En attente',
+  'verifiee': 'Vérifiée',
+  'validee': 'Validée',
+  'refusee': 'Refusée',
+  'approuvee': 'Approuvée'
+};
+
+// Helper internal status mapping for the application
+export const legacyStatusMap = {
+  'draft': 'en_attente',
+  'submitted': 'en_attente',
+  'verified': 'verifiee',
+  'approved': 'approuvee',
+  'validated': 'validee',
+  'rejected': 'refusee'
+} as const;
+
+// Helper for legacy role mapping
+export const legacyRoleMap = {
+  'enseignant': 'Enseignant',
+  'admin': 'Admin',
+  'chef_departement': 'Chef de département',
+  'directrice': 'Directrice des études',
+  'scolarite': 'Scolarité'
+} as const;

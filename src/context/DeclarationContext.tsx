@@ -46,7 +46,7 @@ const MOCK_DECLARATIONS: Declaration[] = [
     course: 'Algorithmique et Programmation',
     date: '2025-04-15',
     hours: 4,
-    status: 'submitted',
+    status: 'en_attente',
     createdAt: '2025-04-15T10:00:00.000Z',
     updatedAt: '2025-04-15T10:00:00.000Z'
   },
@@ -58,7 +58,7 @@ const MOCK_DECLARATIONS: Declaration[] = [
     course: 'Bases de Données',
     date: '2025-04-16',
     hours: 3,
-    status: 'verified',
+    status: 'verifiee',
     verifiedBy: 'Fatou Ndiaye',
     createdAt: '2025-04-16T11:30:00.000Z',
     updatedAt: '2025-04-17T09:15:00.000Z'
@@ -71,7 +71,7 @@ const MOCK_DECLARATIONS: Declaration[] = [
     course: 'Réseaux Informatiques',
     date: '2025-04-17',
     hours: 2,
-    status: 'approved',
+    status: 'approuvee',
     verifiedBy: 'Fatou Ndiaye',
     approvedBy: 'Prof. Ibrahima Sall',
     createdAt: '2025-04-17T14:00:00.000Z',
@@ -85,7 +85,7 @@ const MOCK_DECLARATIONS: Declaration[] = [
     course: 'Intelligence Artificielle',
     date: '2025-04-18',
     hours: 6,
-    status: 'validated',
+    status: 'validee',
     verifiedBy: 'Fatou Ndiaye',
     approvedBy: 'Prof. Ibrahima Sall',
     validatedBy: 'Dr. Aïda Mbaye',
@@ -100,7 +100,7 @@ const MOCK_DECLARATIONS: Declaration[] = [
     course: 'Bases de Données',
     date: '2025-04-19',
     hours: 3,
-    status: 'rejected',
+    status: 'refusee',
     verifiedBy: 'Fatou Ndiaye',
     rejectedBy: 'Prof. Ibrahima Sall',
     rejectionReason: 'Incompatibilité avec le calendrier du département',
@@ -115,7 +115,7 @@ const MOCK_DECLARATIONS: Declaration[] = [
     course: 'Algorithmique et Programmation',
     date: '2025-04-20',
     hours: 2,
-    status: 'draft',
+    status: 'en_attente',
     createdAt: '2025-04-20T08:30:00.000Z',
     updatedAt: '2025-04-20T08:30:00.000Z'
   }
@@ -133,12 +133,12 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
   const pendingDeclarations = user 
     ? declarations.filter(d => {
-        if (user.role === 'scolarite') {
-          return d.status === 'submitted';
-        } else if (user.role === 'chef_departement' && user.department) {
-          return d.status === 'verified' && d.department === user.department;
-        } else if (user.role === 'directrice') {
-          return d.status === 'approved';
+        if (user.role === 'Scolarité') {
+          return d.status === 'en_attente';
+        } else if (user.role === 'Chef de département' && user.department) {
+          return d.status === 'verifiee' && d.department === user.department;
+        } else if (user.role === 'Directrice des études') {
+          return d.status === 'approuvee';
         }
         return false;
       })
@@ -152,7 +152,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       id: Date.now().toString(),
       userId: user.id,
       userName: user.name,
-      status: 'draft',
+      status: 'en_attente',
       createdAt: now,
       updatedAt: now,
       ...newDeclaration
@@ -190,13 +190,13 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       updatedAt: new Date().toISOString() 
     };
     
-    if (status === 'verified') {
+    if (status === 'verifiee') {
       updates.verifiedBy = user.name;
-    } else if (status === 'approved') {
+    } else if (status === 'approuvee') {
       updates.approvedBy = user.name;
-    } else if (status === 'validated') {
+    } else if (status === 'validee') {
       updates.validatedBy = user.name;
-    } else if (status === 'rejected') {
+    } else if (status === 'refusee') {
       updates.rejectedBy = user.name;
       updates.rejectionReason = reason;
     }
@@ -204,11 +204,11 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
     updateDeclaration(id, updates);
     
     const statusMessages = {
-      verified: 'vérifiée',
-      approved: 'approuvée',
-      validated: 'validée',
-      rejected: 'rejetée',
-      submitted: 'soumise'
+      verifiee: 'vérifiée',
+      approuvee: 'approuvée',
+      validee: 'validée',
+      refusee: 'rejetée',
+      en_attente: 'soumise'
     };
     
     toast.success(`Déclaration ${statusMessages[status]} avec succès`);
@@ -229,10 +229,10 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
     }
     
     // For enseignant, return personal stats
-    if (user.role === 'enseignant') {
+    if (user.role === 'Enseignant') {
       const userDecs = declarations.filter(d => d.userId === user.id);
       const totalHours = userDecs.reduce((sum, dec) => {
-        if (dec.status === 'validated') {
+        if (dec.status === 'validee') {
           return sum + dec.hours;
         }
         return sum;
@@ -240,40 +240,40 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       
       return {
         totalHours,
-        pendingDeclarations: userDecs.filter(d => ['submitted', 'verified', 'approved'].includes(d.status)).length,
-        approvedDeclarations: userDecs.filter(d => d.status === 'validated').length,
-        rejectedDeclarations: userDecs.filter(d => d.status === 'rejected').length
+        pendingDeclarations: userDecs.filter(d => ['en_attente', 'verifiee', 'approuvee'].includes(d.status)).length,
+        approvedDeclarations: userDecs.filter(d => d.status === 'validee').length,
+        rejectedDeclarations: userDecs.filter(d => d.status === 'refusee').length
       };
     }
     
     // For scolarite, return global stats
-    if (user.role === 'scolarite') {
+    if (user.role === 'Scolarité') {
       return {
         totalHours: declarations.reduce((sum, dec) => sum + dec.hours, 0),
-        pendingDeclarations: declarations.filter(d => d.status === 'submitted').length,
-        approvedDeclarations: declarations.filter(d => ['verified', 'approved', 'validated'].includes(d.status)).length,
-        rejectedDeclarations: declarations.filter(d => d.status === 'rejected').length
+        pendingDeclarations: declarations.filter(d => d.status === 'en_attente').length,
+        approvedDeclarations: declarations.filter(d => ['verifiee', 'approuvee', 'validee'].includes(d.status)).length,
+        rejectedDeclarations: declarations.filter(d => d.status === 'refusee').length
       };
     }
     
     // For chef_departement, return department stats
-    if (user.role === 'chef_departement' && user.department) {
+    if (user.role === 'Chef de département' && user.department) {
       const deptDecs = declarations.filter(d => d.department === user.department);
       return {
         totalHours: deptDecs.reduce((sum, dec) => sum + dec.hours, 0),
-        pendingDeclarations: deptDecs.filter(d => d.status === 'verified').length,
-        approvedDeclarations: deptDecs.filter(d => ['approved', 'validated'].includes(d.status)).length,
-        rejectedDeclarations: deptDecs.filter(d => d.status === 'rejected').length
+        pendingDeclarations: deptDecs.filter(d => d.status === 'verifiee').length,
+        approvedDeclarations: deptDecs.filter(d => ['approuvee', 'validee'].includes(d.status)).length,
+        rejectedDeclarations: deptDecs.filter(d => d.status === 'refusee').length
       };
     }
     
     // For directrice, return all stats
-    if (user.role === 'directrice') {
+    if (user.role === 'Directrice des études') {
       return {
         totalHours: declarations.reduce((sum, dec) => sum + dec.hours, 0),
-        pendingDeclarations: declarations.filter(d => d.status === 'approved').length,
-        approvedDeclarations: declarations.filter(d => d.status === 'validated').length,
-        rejectedDeclarations: declarations.filter(d => d.status === 'rejected').length
+        pendingDeclarations: declarations.filter(d => d.status === 'approuvee').length,
+        approvedDeclarations: declarations.filter(d => d.status === 'validee').length,
+        rejectedDeclarations: declarations.filter(d => d.status === 'refusee').length
       };
     }
     

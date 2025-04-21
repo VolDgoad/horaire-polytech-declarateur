@@ -13,7 +13,7 @@ export function RecentDeclarations() {
   
   // Enseignant voit ses propres déclarations récentes
   // Admin voit les déclarations en attente récentes
-  const declarations = user?.role === 'enseignant' 
+  const declarations = user?.role === 'Enseignant' 
     ? userDeclarations 
     : pendingDeclarations;
   
@@ -24,17 +24,15 @@ export function RecentDeclarations() {
   // Fonction pour obtenir le badge approprié pour chaque statut
   const getStatusBadge = (status: DeclarationStatus) => {
     switch (status) {
-      case 'draft':
-        return <Badge variant="outline">Brouillon</Badge>;
-      case 'submitted':
-        return <Badge variant="secondary">Soumise</Badge>;
-      case 'verified':
+      case 'en_attente':
+        return <Badge variant="outline">En attente</Badge>;
+      case 'verifiee':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Vérifiée</Badge>;
-      case 'approved':
+      case 'approuvee':
         return <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100">Approuvée</Badge>;
-      case 'validated':
+      case 'validee':
         return <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">Validée</Badge>;
-      case 'rejected':
+      case 'refusee':
         return <Badge variant="destructive">Rejetée</Badge>;
       default:
         return <Badge variant="outline">Inconnu</Badge>;
@@ -42,7 +40,7 @@ export function RecentDeclarations() {
   };
   
   const getTargetUrl = (declaration: any) => {
-    if (user?.role === 'enseignant') {
+    if (user?.role === 'Enseignant') {
       return `/declarations/${declaration.id}`;
     } else {
       return `/validations/${declaration.id}`;
@@ -53,10 +51,10 @@ export function RecentDeclarations() {
     <Card>
       <CardHeader>
         <CardTitle>
-          {user?.role === 'enseignant' ? 'Mes déclarations récentes' : 'Déclarations à traiter'}
+          {user?.role === 'Enseignant' ? 'Mes déclarations récentes' : 'Déclarations à traiter'}
         </CardTitle>
         <CardDescription>
-          {user?.role === 'enseignant' 
+          {user?.role === 'Enseignant' 
             ? 'Vos déclarations les plus récentes' 
             : 'Déclarations en attente de traitement'}
         </CardDescription>
@@ -64,7 +62,7 @@ export function RecentDeclarations() {
       <CardContent className="px-2">
         {recentDeclarations.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
-            {user?.role === 'enseignant' 
+            {user?.role === 'Enseignant' 
               ? 'Vous n\'avez pas encore de déclaration' 
               : 'Aucune déclaration en attente'}
           </div>
@@ -82,7 +80,7 @@ export function RecentDeclarations() {
                   {getStatusBadge(declaration.status)}
                   <Button variant="ghost" size="sm" asChild>
                     <Link to={getTargetUrl(declaration)}>
-                      {user?.role === 'enseignant' ? 'Détails' : 'Traiter'}
+                      {user?.role === 'Enseignant' ? 'Détails' : 'Traiter'}
                     </Link>
                   </Button>
                 </div>
@@ -91,7 +89,7 @@ export function RecentDeclarations() {
             
             <div className="flex justify-center mt-4">
               <Button variant="outline" asChild>
-                <Link to={user?.role === 'enseignant' ? '/declarations' : '/validations'}>
+                <Link to={user?.role === 'Enseignant' ? '/declarations' : '/validations'}>
                   Voir tout
                 </Link>
               </Button>

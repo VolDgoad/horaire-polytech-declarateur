@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDeclarations } from '@/context/DeclarationContext';
 import { useAuth } from '@/context/AuthContext';
@@ -13,6 +12,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { 
   Card, 
@@ -22,57 +28,66 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { DeclarationStatus } from '@/types';
+import { useState } from 'react';
 
 export function ValidationList() {
-  const { user } = useAuth();
   const { pendingDeclarations } = useDeclarations();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   
-  // Filtrer les déclarations
-  const filteredDeclarations = pendingDeclarations
-    .filter(declaration => 
-      declaration.course.toLowerCase().includes(search.toLowerCase()) ||
-      declaration.userName.toLowerCase().includes(search.toLowerCase()) ||
-      declaration.date.includes(search)
-    )
-    .sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
+  // Déterminer le statut que nous filtrons en fonction du rôle de l'utilisateur
+  let pendingStatus: DeclarationStatus | null = null;
   
-  const getStatusLabel = () => {
-    if (user?.role === 'scolarite') return 'En attente de vérification';
-    if (user?.role === 'chef_departement') return 'En attente d\'approbation';
-    if (user?.role === 'directrice') return 'En attente de validation finale';
-    return 'En attente';
-  };
+  if (user?.role === 'Scolarité') {
+    pendingStatus = 'en_attente';
+  } else if (user?.role === 'Chef de département') {
+    pendingStatus = 'verifiee';
+  } else if (user?.role === 'Directrice des études') {
+    pendingStatus = 'approuvee';
+  }
   
-  // Fonction pour obtenir le badge approprié pour chaque statut
+  // Obtenir le badge approprié pour le statut
   const getStatusBadge = (status: DeclarationStatus) => {
     switch (status) {
-      case 'submitted':
-        return <Badge variant="secondary">Soumise</Badge>;
-      case 'verified':
+      case 'en_attente':
+        return <Badge variant="secondary">En attente</Badge>;
+      case 'verifiee':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Vérifiée</Badge>;
-      case 'approved':
+      case 'approuvee':
         return <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100">Approuvée</Badge>;
       default:
         return <Badge variant="outline">Inconnu</Badge>;
     }
   };
   
+  // Filtrer les déclarations par recherche
+  const filteredDeclarations = pendingDeclarations
+    .filter(declaration => 
+      declaration.course.toLowerCase().includes(search.toLowerCase()) ||
+      declaration.userName.toLowerCase().includes(search.toLowerCase()) ||
+      declaration.department.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Validations en attente</CardTitle>
-        <CardDescription>Déclarations d'heures {getStatusLabel()}</CardDescription>
+        <CardTitle>Déclarations en attente</CardTitle>
+        <CardDescription>
+          {pendingStatus === 'en_attente' ? 'Déclarations en attente de vérification' : 
+           pendingStatus === 'verifiee' ? 'Déclarations vérifiées en attente d\'approbation' : 
+           pendingStatus === 'approuvee' ? 'Déclarations approuvées en attente de validation finale' : 
+           'Déclarations à traiter'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex justify-between items-center mb-6">
-          <div className="w-full max-w-sm">
-            <Input
-              placeholder="Rechercher par nom, cours ou date..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+        <div className="mb-6">
+          <Input
+            placeholder="Rechercher par enseignant, cours ou département..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-md"
+          />
         </div>
         
         <div className="rounded-md border">
@@ -92,7 +107,7 @@ export function ValidationList() {
               {filteredDeclarations.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                    Aucune déclaration en attente
+                    Aucune déclaration en attente de traitement
                   </TableCell>
                 </TableRow>
               ) : (
@@ -111,7 +126,7 @@ export function ValidationList() {
                         asChild
                       >
                         <Link to={`/validations/${declaration.id}`}>
-                          Valider
+                          Traiter
                         </Link>
                       </Button>
                     </TableCell>

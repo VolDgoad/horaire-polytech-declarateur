@@ -27,7 +27,7 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { DeclarationStatus } from '@/types';
+import { DeclarationStatus, statusDisplayMap } from '@/types';
 
 export function DeclarationList() {
   const { userDeclarations } = useDeclarations();
@@ -48,17 +48,15 @@ export function DeclarationList() {
   // Fonction pour obtenir le badge approprié pour chaque statut
   const getStatusBadge = (status: DeclarationStatus) => {
     switch (status) {
-      case 'draft':
-        return <Badge variant="outline">Brouillon</Badge>;
-      case 'submitted':
-        return <Badge variant="secondary">Soumise</Badge>;
-      case 'verified':
+      case 'en_attente':
+        return <Badge variant="outline">En attente</Badge>;
+      case 'verifiee':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Vérifiée</Badge>;
-      case 'approved':
+      case 'approuvee':
         return <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100">Approuvée</Badge>;
-      case 'validated':
+      case 'validee':
         return <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">Validée</Badge>;
-      case 'rejected':
+      case 'refusee':
         return <Badge variant="destructive">Rejetée</Badge>;
       default:
         return <Badge variant="outline">Inconnu</Badge>;
@@ -84,12 +82,11 @@ export function DeclarationList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="draft">Brouillon</SelectItem>
-                  <SelectItem value="submitted">Soumise</SelectItem>
-                  <SelectItem value="verified">Vérifiée</SelectItem>
-                  <SelectItem value="approved">Approuvée</SelectItem>
-                  <SelectItem value="validated">Validée</SelectItem>
-                  <SelectItem value="rejected">Rejetée</SelectItem>
+                  <SelectItem value="en_attente">En attente</SelectItem>
+                  <SelectItem value="verifiee">Vérifiée</SelectItem>
+                  <SelectItem value="approuvee">Approuvée</SelectItem>
+                  <SelectItem value="validee">Validée</SelectItem>
+                  <SelectItem value="refusee">Rejetée</SelectItem>
                 </SelectContent>
               </Select>
             </div>

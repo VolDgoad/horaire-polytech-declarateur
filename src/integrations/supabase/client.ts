@@ -13,15 +13,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Helper function to convert database DeclarationStatus to our app's DeclarationStatus
 export const mapDBStatusToAppStatus = (status: Database['public']['Enums']['declaration_status']): DeclarationStatus => {
-  switch (status) {
-    case 'en_attente': return 'en_attente';
-    case 'verifiee': return 'verifiee';
-    case 'validee': return 'validee';
-    case 'refusee': return 'refusee';
-    case 'approuvee': return 'approuvee';
-    default: return 'en_attente';
-  }
+  return status;
 };
 
 // Helper types for our application
-import { DeclarationStatus } from '@/types';
+import { DeclarationStatus, legacyStatusMap, legacyRoleMap } from '@/types';
+

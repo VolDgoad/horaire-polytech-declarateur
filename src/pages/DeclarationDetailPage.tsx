@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDeclarations } from '@/context/DeclarationContext';
 import { useAuth } from '@/context/AuthContext';
@@ -45,29 +44,26 @@ export default function DeclarationDetailPage() {
   
   const getStatusBadge = (status: DeclarationStatus) => {
     switch (status) {
-      case 'draft':
-        return <Badge variant="outline">Brouillon</Badge>;
-      case 'submitted':
-        return <Badge variant="secondary">Soumise</Badge>;
-      case 'verified':
+      case 'en_attente':
+        return <Badge variant="outline">En attente</Badge>;
+      case 'verifiee':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Vérifiée</Badge>;
-      case 'approved':
+      case 'approuvee':
         return <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100">Approuvée</Badge>;
-      case 'validated':
+      case 'validee':
         return <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">Validée</Badge>;
-      case 'rejected':
+      case 'refusee':
         return <Badge variant="destructive">Rejetée</Badge>;
       default:
         return <Badge variant="outline">Inconnu</Badge>;
     }
   };
   
-  const canEdit = declaration.status === 'draft' && user?.id === declaration.userId;
-  const canDelete = (declaration.status === 'draft' || declaration.status === 'rejected') && user?.id === declaration.userId;
-  const canSubmit = declaration.status === 'draft' && user?.id === declaration.userId;
+  const canEdit = declaration.status === 'en_attente' && user?.id === declaration.userId;
+  const canDelete = (declaration.status === 'en_attente' || declaration.status === 'refusee') && user?.id === declaration.userId;
+  const canSubmit = declaration.status === 'en_attente' && user?.id === declaration.userId;
   
   const handleEdit = () => {
-    // Dans une implémentation réelle, nous naviguerions vers un formulaire d'édition
     toast.info('Fonctionnalité d\'édition à implémenter');
   };
   

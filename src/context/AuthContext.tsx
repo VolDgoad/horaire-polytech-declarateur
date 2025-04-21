@@ -18,27 +18,27 @@ const MOCK_USERS: User[] = [
     id: '1',
     name: 'Dr. Amadou Diop',
     email: 'enseignant@polytech.edu',
-    role: 'enseignant',
+    role: 'Enseignant',
     department: 'Informatique'
   },
   {
     id: '2',
     name: 'Fatou Ndiaye',
     email: 'scolarite@polytech.edu',
-    role: 'scolarite'
+    role: 'Scolarité'
   },
   {
     id: '3',
     name: 'Prof. Ibrahima Sall',
     email: 'chef@polytech.edu',
-    role: 'chef_departement',
+    role: 'Chef de département',
     department: 'Informatique'
   },
   {
     id: '4',
     name: 'Dr. Aïda Mbaye',
     email: 'directrice@polytech.edu',
-    role: 'directrice'
+    role: 'Directrice des études'
   }
 ];
 
