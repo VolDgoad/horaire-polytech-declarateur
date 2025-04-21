@@ -19,6 +19,7 @@ export interface Declaration {
   course: string;
   date: string;
   hours: number;
+  notes?: string; // Added notes field as optional
   status: DeclarationStatus;
   verifiedBy?: string;
   approvedBy?: string;

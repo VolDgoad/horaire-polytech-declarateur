@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import {
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuLink,
+  SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
@@ -36,54 +36,54 @@ export function SideNav() {
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem className={isActive('/dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
-              <SidebarMenuLink asChild>
+              <SidebarMenuButton asChild>
                 <Link to="/dashboard">
                   <LayoutDashboard className="h-4 w-4 mr-2" />
                   <span>Tableau de bord</span>
                 </Link>
-              </SidebarMenuLink>
+              </SidebarMenuButton>
             </SidebarMenuItem>
             
             {user.role === 'enseignant' && (
               <>
                 <SidebarMenuItem className={isActive('/declarations/new') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
-                  <SidebarMenuLink asChild>
+                  <SidebarMenuButton asChild>
                     <Link to="/declarations/new">
                       <FileText className="h-4 w-4 mr-2" />
                       <span>Nouvelle déclaration</span>
                     </Link>
-                  </SidebarMenuLink>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem className={isActive('/declarations') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
-                  <SidebarMenuLink asChild>
+                  <SidebarMenuButton asChild>
                     <Link to="/declarations">
                       <Clock className="h-4 w-4 mr-2" />
                       <span>Mes déclarations</span>
                     </Link>
-                  </SidebarMenuLink>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               </>
             )}
             
             {(user.role === 'scolarite' || user.role === 'chef_departement' || user.role === 'directrice') && (
               <SidebarMenuItem className={isActive('/validations') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
-                <SidebarMenuLink asChild>
+                <SidebarMenuButton asChild>
                   <Link to="/validations">
                     <CheckCircle className="h-4 w-4 mr-2" />
                     <span>Validations</span>
                   </Link>
-                </SidebarMenuLink>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             )}
             
             {(user.role === 'chef_departement' || user.role === 'directrice') && (
               <SidebarMenuItem className={isActive('/reports') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
-                <SidebarMenuLink asChild>
+                <SidebarMenuButton asChild>
                   <Link to="/reports">
                     <FileBarChart className="h-4 w-4 mr-2" />
                     <span>Rapports</span>
                   </Link>
-                </SidebarMenuLink>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             )}
           </SidebarMenu>
@@ -96,20 +96,20 @@ export function SideNav() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem className={isActive('/users') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
-                <SidebarMenuLink asChild>
+                <SidebarMenuButton asChild>
                   <Link to="/users">
                     <Users className="h-4 w-4 mr-2" />
                     <span>Utilisateurs</span>
                   </Link>
-                </SidebarMenuLink>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem className={isActive('/settings') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
-                <SidebarMenuLink asChild>
+                <SidebarMenuButton asChild>
                   <Link to="/settings">
                     <Settings className="h-4 w-4 mr-2" />
                     <span>Paramètres</span>
                   </Link>
-                </SidebarMenuLink>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
@@ -122,12 +122,12 @@ export function SideNav() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem className={isActive('/profile') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
-                <SidebarMenuLink asChild>
+                <SidebarMenuButton asChild>
                   <Link to="/profile">
                     <User className="h-4 w-4 mr-2" />
                     <span>Mon profil</span>
                   </Link>
-                </SidebarMenuLink>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>

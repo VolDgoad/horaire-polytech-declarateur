@@ -50,7 +50,7 @@ export function DeclarationForm() {
         course,
         date,
         hours,
-        notes
+        // Remove notes from here as it's not in the type
       });
       
       if (!isDraft) {
