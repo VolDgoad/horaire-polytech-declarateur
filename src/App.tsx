@@ -5,8 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { DeclarationProvider } from "./context/DeclarationContext";
-
-// Pages
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
 import DeclarationsPage from "./pages/DeclarationsPage";
@@ -15,10 +13,10 @@ import DeclarationDetailPage from "./pages/DeclarationDetailPage";
 import ValidationsPage from "./pages/ValidationsPage";
 import ValidationDetailPage from "./pages/ValidationDetailPage";
 import NotFound from "./pages/NotFound";
+import RegisterPage from "./pages/RegisterPage";
 
 const queryClient = new QueryClient();
 
-// Route protégée avec redirection
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   
@@ -33,7 +31,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Route qui redirige vers le tableau de bord si l'utilisateur est déjà connecté
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   
@@ -48,7 +45,6 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Routes réservées aux enseignants
 const TeacherRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   
@@ -59,7 +55,6 @@ const TeacherRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Routes réservées aux validateurs (scolarité, chefs de département, directrice)
 const ValidatorRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   
@@ -79,24 +74,25 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {/* Page de connexion - accessible uniquement si non connecté */}
               <Route path="/login" element={
                 <PublicRoute>
                   <LoginPage />
                 </PublicRoute>
               } />
+              <Route path="/register" element={
+                <PublicRoute>
+                  <RegisterPage />
+                </PublicRoute>
+              } />
               
-              {/* Redirection de la page d'accueil vers la connexion ou le tableau de bord */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               
-              {/* Routes protégées - accessibles uniquement si connecté */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
               } />
               
-              {/* Routes pour les enseignants */}
               <Route path="/declarations" element={
                 <ProtectedRoute>
                   <TeacherRoute>
@@ -121,7 +117,6 @@ const App = () => (
                 </ProtectedRoute>
               } />
               
-              {/* Routes pour les validateurs */}
               <Route path="/validations" element={
                 <ProtectedRoute>
                   <ValidatorRoute>
@@ -138,7 +133,6 @@ const App = () => (
                 </ProtectedRoute>
               } />
               
-              {/* Route 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

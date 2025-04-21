@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
 import { toast } from '@/components/ui/sonner';
@@ -7,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  signup: (email: string, password: string, name: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -88,6 +88,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signup = async (email: string, password: string, name: string) => {
+    setIsLoading(true);
+    
+    try {
+      // Simulate API call with a delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if user already exists
+      if (MOCK_USERS.some(u => u.email === email)) {
+        throw new Error('Un utilisateur avec cet email existe déjà');
+      }
+      
+      // Create new user (in a real app, this would be handled by Supabase)
+      const newUser: User = {
+        id: String(MOCK_USERS.length + 1),
+        name,
+        email,
+        role: 'Enseignant',
+        department: 'Informatique'
+      };
+      
+      MOCK_USERS.push(newUser);
+      setUser(newUser);
+      localStorage.setItem('polytechUser', JSON.stringify(newUser));
+      toast.success('Inscription réussie');
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Une erreur est survenue lors de l\'inscription');
+      }
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('polytechUser');
@@ -95,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, signup, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
