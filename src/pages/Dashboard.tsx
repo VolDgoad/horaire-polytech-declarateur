@@ -29,25 +29,25 @@ export default function Dashboard() {
               <div className="p-6 flex flex-col items-center text-center">
                 <div className="rounded-full bg-primary/10 p-3 mb-4">
                   <div className="h-10 w-10 rounded-full bg-polytech-blue text-white flex items-center justify-center font-semibold">
-                    {user?.role === 'enseignant' ? 'E' : user?.role === 'scolarite' ? 'S' : user?.role === 'chef_departement' ? 'C' : 'D'}
+                    {user?.role === 'Enseignant' ? 'E' : user?.role === 'Scolarité' ? 'S' : user?.role === 'Chef de département' ? 'C' : 'D'}
                   </div>
                 </div>
                 <h3 className="text-xl font-medium">{user?.name}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {user?.role === 'enseignant' && 'Enseignant'}
-                  {user?.role === 'scolarite' && 'Service Scolarité'}
-                  {user?.role === 'chef_departement' && 'Chef de Département'}
-                  {user?.role === 'directrice' && 'Directrice des Études'}
+                  {user?.role === 'Enseignant' && 'Enseignant'}
+                  {user?.role === 'Scolarité' && 'Service Scolarité'}
+                  {user?.role === 'Chef de département' && 'Chef de Département'}
+                  {user?.role === 'Directrice des études' && 'Directrice des Études'}
                 </p>
                 {user?.department && (
                   <p className="text-sm mt-1">Département: {user.department}</p>
                 )}
                 <div className="mt-4 text-sm">
                   <p className="text-muted-foreground">
-                    {user?.role === 'enseignant' && 'Vous pouvez déclarer jusqu\'à 325 heures par an.'}
-                    {user?.role === 'scolarite' && 'Vous vérifiez les déclarations avant validation.'}
-                    {user?.role === 'chef_departement' && 'Vous approuvez les déclarations de votre département.'}
-                    {user?.role === 'directrice' && 'Vous validez finalement toutes les déclarations.'}
+                    {user?.role === 'Enseignant' && 'Vous pouvez déclarer jusqu\'à 325 heures par an.'}
+                    {user?.role === 'Scolarité' && 'Vous vérifiez les déclarations avant validation.'}
+                    {user?.role === 'Chef de département' && 'Vous approuvez les déclarations de votre département.'}
+                    {user?.role === 'Directrice des études' && 'Vous validez finalement toutes les déclarations.'}
                   </p>
                 </div>
               </div>

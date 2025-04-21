@@ -19,7 +19,7 @@ export function StatsCards() {
         <CardContent>
           <div className="text-2xl font-bold">{stats.totalHours}h</div>
           <p className="text-xs text-muted-foreground mt-1">
-            {user?.role === 'enseignant' ? 'Validées sur 325h annuelles' : 'Déclarées'}
+            {user?.role === 'Enseignant' ? 'Validées sur 325h annuelles' : 'Déclarées'}
           </p>
         </CardContent>
       </Card>
@@ -32,7 +32,7 @@ export function StatsCards() {
         <CardContent>
           <div className="text-2xl font-bold">{stats.pendingDeclarations}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            {user?.role === 'enseignant' ? 'Vos déclarations en attente' : 'Déclarations à traiter'}
+            {user?.role === 'Enseignant' ? 'Vos déclarations en attente' : 'Déclarations à traiter'}
           </p>
         </CardContent>
       </Card>
@@ -45,7 +45,7 @@ export function StatsCards() {
         <CardContent>
           <div className="text-2xl font-bold">{stats.approvedDeclarations}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            {user?.role === 'enseignant' ? 'Vos déclarations validées' : 'Déclarations validées'}
+            {user?.role === 'Enseignant' ? 'Vos déclarations validées' : 'Déclarations validées'}
           </p>
         </CardContent>
       </Card>
@@ -58,7 +58,7 @@ export function StatsCards() {
         <CardContent>
           <div className="text-2xl font-bold">{stats.rejectedDeclarations}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            {user?.role === 'enseignant' ? 'Vos déclarations rejetées' : 'Déclarations rejetées'}
+            {user?.role === 'Enseignant' ? 'Vos déclarations rejetées' : 'Déclarations rejetées'}
           </p>
         </CardContent>
       </Card>

@@ -18,4 +18,3 @@ export const mapDBStatusToAppStatus = (status: Database['public']['Enums']['decl
 
 // Helper types for our application
 import { DeclarationStatus, legacyStatusMap, legacyRoleMap } from '@/types';
-

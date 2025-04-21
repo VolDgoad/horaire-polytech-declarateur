@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Declaration, DeclarationStatus, Stats, Department, Course } from '@/types';
 import { useAuth } from './AuthContext';
@@ -18,7 +17,6 @@ interface DeclarationContextType {
   getUserStats: () => Stats;
 }
 
-// Sample data
 const MOCK_DEPARTMENTS: Department[] = [
   { id: '1', name: 'Informatique' },
   { id: '2', name: 'Génie Civil' },
@@ -228,7 +226,6 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       };
     }
     
-    // For enseignant, return personal stats
     if (user.role === 'Enseignant') {
       const userDecs = declarations.filter(d => d.userId === user.id);
       const totalHours = userDecs.reduce((sum, dec) => {
@@ -246,7 +243,6 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       };
     }
     
-    // For scolarite, return global stats
     if (user.role === 'Scolarité') {
       return {
         totalHours: declarations.reduce((sum, dec) => sum + dec.hours, 0),
@@ -256,7 +252,6 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       };
     }
     
-    // For chef_departement, return department stats
     if (user.role === 'Chef de département' && user.department) {
       const deptDecs = declarations.filter(d => d.department === user.department);
       return {
@@ -267,7 +262,6 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       };
     }
     
-    // For directrice, return all stats
     if (user.role === 'Directrice des études') {
       return {
         totalHours: declarations.reduce((sum, dec) => sum + dec.hours, 0),

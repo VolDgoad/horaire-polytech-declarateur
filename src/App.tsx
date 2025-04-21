@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -53,7 +52,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 const TeacherRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   
-  if (user?.role !== 'enseignant') {
+  if (user?.role !== 'Enseignant') {
     return <Navigate to="/dashboard" replace />;
   }
   
@@ -64,7 +63,7 @@ const TeacherRoute = ({ children }: { children: React.ReactNode }) => {
 const ValidatorRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   
-  if (!['scolarite', 'chef_departement', 'directrice'].includes(user?.role || '')) {
+  if (!['Scolarité', 'Chef de département', 'Directrice des études'].includes(user?.role || '')) {
     return <Navigate to="/dashboard" replace />;
   }
   

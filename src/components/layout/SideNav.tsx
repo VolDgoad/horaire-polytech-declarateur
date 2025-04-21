@@ -44,7 +44,7 @@ export function SideNav() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             
-            {user.role === 'enseignant' && (
+            {user.role === 'Enseignant' && (
               <>
                 <SidebarMenuItem className={isActive('/declarations/new') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
                   <SidebarMenuButton asChild>
@@ -65,7 +65,7 @@ export function SideNav() {
               </>
             )}
             
-            {(user.role === 'scolarite' || user.role === 'chef_departement' || user.role === 'directrice') && (
+            {(user.role === 'Scolarité' || user.role === 'Chef de département' || user.role === 'Directrice des études') && (
               <SidebarMenuItem className={isActive('/validations') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
                 <SidebarMenuButton asChild>
                   <Link to="/validations">
@@ -76,7 +76,7 @@ export function SideNav() {
               </SidebarMenuItem>
             )}
             
-            {(user.role === 'chef_departement' || user.role === 'directrice') && (
+            {(user.role === 'Chef de département' || user.role === 'Directrice des études') && (
               <SidebarMenuItem className={isActive('/reports') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
                 <SidebarMenuButton asChild>
                   <Link to="/reports">
@@ -90,7 +90,7 @@ export function SideNav() {
         </SidebarGroupContent>
       </SidebarGroup>
       
-      {user.role === 'directrice' && (
+      {user.role === 'Directrice des études' && (
         <SidebarGroup>
           <SidebarGroupLabel>Administration</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -116,7 +116,7 @@ export function SideNav() {
         </SidebarGroup>
       )}
       
-      {user.role !== 'directrice' && (
+      {user.role !== 'Directrice des études' && (
         <SidebarGroup>
           <SidebarGroupLabel>Paramètres</SidebarGroupLabel>
           <SidebarGroupContent>

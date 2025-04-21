@@ -124,7 +124,7 @@ export const statusDisplayMap = {
 // Helper internal status mapping for the application
 export const legacyStatusMap = {
   'draft': 'en_attente',
-  'submitted': 'en_attente',
+  'submitted': 'en_attente', // Map submitted to en_attente
   'verified': 'verifiee',
   'approved': 'approuvee',
   'validated': 'validee',

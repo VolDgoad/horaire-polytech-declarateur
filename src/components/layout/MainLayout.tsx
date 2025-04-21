@@ -40,10 +40,10 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <div>
                   <p className="text-sm font-medium text-white">{user.name}</p>
                   <p className="text-xs text-sidebar-accent">
-                    {user.role === 'enseignant' && 'Enseignant'}
-                    {user.role === 'scolarite' && 'Service Scolarité'}
-                    {user.role === 'chef_departement' && 'Chef de Département'}
-                    {user.role === 'directrice' && 'Directrice des Études'}
+                    {user.role === 'Enseignant' && 'Enseignant'}
+                    {user.role === 'Scolarité' && 'Service Scolarité'}
+                    {user.role === 'Chef de département' && 'Chef de Département'}
+                    {user.role === 'Directrice des études' && 'Directrice des Études'}
                   </p>
                 </div>
               </div>

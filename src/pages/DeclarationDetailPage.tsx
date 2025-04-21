@@ -81,7 +81,7 @@ export default function DeclarationDetailPage() {
   };
   
   const confirmSubmit = () => {
-    updateStatus(declaration.id, 'submitted');
+    updateStatus(declaration.id, 'en_attente');
     toast.success('Déclaration soumise avec succès');
   };
   
