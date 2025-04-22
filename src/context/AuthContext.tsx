@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
 import { toast } from '@/components/ui/sonner';
@@ -19,22 +20,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
+    const initializeAuth = async () => {
+      setIsLoading(true);
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await fetchUserProfile(session.user.id);
+        }
+      } catch (error) {
+        console.error('Session initialization error:', error);
+      } finally {
         setIsLoading(false);
       }
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        await fetchUserProfile(session.user.id);
+        // Use setTimeout to prevent potential deadlocks with Supabase auth callbacks
+        setTimeout(() => {
+          fetchUserProfile(session.user.id);
+        }, 0);
       } else {
         setUser(null);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => {
@@ -51,7 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
-        throw error;
+        console.error('Error fetching user profile:', error);
+        setUser(null);
+        setIsLoading(false);
+        return;
       }
 
       if (data) {
@@ -63,10 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           department: data.departement_id ? 'Informatique' : undefined // We'll need to fetch department name later
         };
         setUser(userProfile);
+      } else {
+        setUser(null);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      toast.error("Erreur lors de la récupération du profil");
+      setUser(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -74,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -83,12 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
       
-      toast.success('Connexion réussie');
+      if (!data.user) {
+        throw new Error('Aucun utilisateur trouvé');
+      }
+      
+      // The fetchUserProfile will be called by the onAuthStateChange listener
     } catch (error: any) {
       toast.error(error.message || 'Une erreur est survenue lors de la connexion');
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
