@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
 import { toast } from '@/components/ui/sonner';
@@ -26,12 +25,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          await fetchUserProfile(session.user.id);
-        } else {
-          setIsLoading(false);
+          const userId = session.user.id;
+          
+          // Create a minimal user object first to avoid redirects to login page
+          const minimalUser: User = {
+            id: userId,
+            name: session.user.email || 'Utilisateur',
+            email: session.user.email || '',
+            role: 'Enseignant', // Default role until profile is loaded
+          };
+          
+          setUser(minimalUser);
+          
+          // Then try to fetch the full profile in the background
+          try {
+            await fetchUserProfile(userId);
+          } catch (profileError) {
+            console.error('Error loading user profile:', profileError);
+            // Keep the minimal user object even if profile fetch fails
+          }
         }
       } catch (error) {
         console.error('Session initialization error:', error);
+        setUser(null);
+      } finally {
         setIsLoading(false);
       }
     };
@@ -39,13 +56,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        // Use setTimeout to prevent potential deadlocks with Supabase auth callbacks
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Create minimal user immediately to avoid login redirect issues
+        const minimalUser: User = {
+          id: session.user.id,
+          name: session.user.email || 'Utilisateur',
+          email: session.user.email || '',
+          role: 'Enseignant', // Default role until profile is loaded
+        };
+        
+        setUser(minimalUser);
+        setIsLoading(false);
+        
+        // Then fetch full profile asynchronously
         setTimeout(() => {
-          fetchUserProfile(session.user.id);
+          fetchUserProfile(session.user.id).catch(err => {
+            console.error('Error fetching profile after sign in:', err);
+          });
         }, 0);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsLoading(false);
       }
@@ -58,32 +88,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      // Updated query to use the new RLS policies
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
+      // Instead of using RLS directly, use a simple custom query
+      const { data: authUser, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser.user) {
+        throw authError || new Error('User not found');
+      }
+      
+      // Simplified query to avoid RLS policy recursion issues
+      const { data, error } = await supabase.rpc('get_current_user_profile');
+      
       if (error) {
         console.error('Error fetching user profile:', error);
-        setUser(null);
-        setIsLoading(false);
-        return;
+        throw error;
       }
-
+      
       if (data) {
         // First get department name if department ID exists
         let departmentName;
         if (data.departement_id) {
-          const { data: deptData, error: deptError } = await supabase
-            .from('departements')
-            .select('nom')
-            .eq('id', data.departement_id)
-            .single();
-            
-          if (!deptError && deptData) {
-            departmentName = deptData.nom;
+          try {
+            const { data: deptData, error: deptError } = await supabase
+              .from('departements')
+              .select('nom')
+              .eq('id', data.departement_id)
+              .single();
+              
+            if (!deptError && deptData) {
+              departmentName = deptData.nom;
+            }
+          } catch (deptError) {
+            console.error('Error fetching department:', deptError);
           }
         }
 
@@ -97,14 +132,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
         
         setUser(userProfile);
-      } else {
-        setUser(null);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
+      console.error('Error in fetchUserProfile:', error);
+      // Don't clear the user here - keep the minimal user object
+      // This way user doesn't get redirected to login
     }
   };
 
@@ -125,10 +157,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Aucun utilisateur trouvé');
       }
       
-      // The fetchUserProfile will be called by the onAuthStateChange listener
+      // Create minimal user right away
+      const minimalUser: User = {
+        id: data.user.id,
+        name: data.user.email || 'Utilisateur',
+        email: data.user.email || '',
+        role: 'Enseignant', // Default role until profile is loaded
+      };
+      
+      setUser(minimalUser);
+      toast.success('Connexion réussie');
+      
+      // The full profile will be loaded by the auth state change listener
     } catch (error: any) {
       toast.error(error.message || 'Une erreur est survenue lors de la connexion');
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
