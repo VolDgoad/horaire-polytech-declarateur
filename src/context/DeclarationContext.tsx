@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Declaration, DeclarationStatus, Stats, Department, Course } from '@/types';
 import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DeclarationContextType {
   declarations: Declaration[];
@@ -17,117 +19,117 @@ interface DeclarationContextType {
   getUserStats: () => Stats;
 }
 
-const MOCK_DEPARTMENTS: Department[] = [
-  { id: '1', name: 'Informatique' },
-  { id: '2', name: 'Génie Civil' },
-  { id: '3', name: 'Electromécanique' },
-  { id: '4', name: 'Gestion' }
-];
-
-const MOCK_COURSES: Course[] = [
-  { id: '1', name: 'Algorithmique et Programmation', departmentId: '1' },
-  { id: '2', name: 'Bases de Données', departmentId: '1' },
-  { id: '3', name: 'Réseaux Informatiques', departmentId: '1' },
-  { id: '4', name: 'Intelligence Artificielle', departmentId: '1' },
-  { id: '5', name: 'Mécanique des Sols', departmentId: '2' },
-  { id: '6', name: 'Résistance des Matériaux', departmentId: '2' },
-  { id: '7', name: 'Électronique de Puissance', departmentId: '3' },
-  { id: '8', name: 'Comptabilité Générale', departmentId: '4' }
-];
-
-const MOCK_DECLARATIONS: Declaration[] = [
-  {
-    id: '1',
-    userId: '1',
-    userName: 'Dr. Amadou Diop',
-    department: 'Informatique',
-    course: 'Algorithmique et Programmation',
-    date: '2025-04-15',
-    hours: 4,
-    status: 'en_attente',
-    createdAt: '2025-04-15T10:00:00.000Z',
-    updatedAt: '2025-04-15T10:00:00.000Z'
-  },
-  {
-    id: '2',
-    userId: '1',
-    userName: 'Dr. Amadou Diop',
-    department: 'Informatique',
-    course: 'Bases de Données',
-    date: '2025-04-16',
-    hours: 3,
-    status: 'verifiee',
-    verifiedBy: 'Fatou Ndiaye',
-    createdAt: '2025-04-16T11:30:00.000Z',
-    updatedAt: '2025-04-17T09:15:00.000Z'
-  },
-  {
-    id: '3',
-    userId: '1',
-    userName: 'Dr. Amadou Diop',
-    department: 'Informatique',
-    course: 'Réseaux Informatiques',
-    date: '2025-04-17',
-    hours: 2,
-    status: 'approuvee',
-    verifiedBy: 'Fatou Ndiaye',
-    approvedBy: 'Prof. Ibrahima Sall',
-    createdAt: '2025-04-17T14:00:00.000Z',
-    updatedAt: '2025-04-18T10:45:00.000Z'
-  },
-  {
-    id: '4',
-    userId: '1',
-    userName: 'Dr. Amadou Diop',
-    department: 'Informatique',
-    course: 'Intelligence Artificielle',
-    date: '2025-04-18',
-    hours: 6,
-    status: 'validee',
-    verifiedBy: 'Fatou Ndiaye',
-    approvedBy: 'Prof. Ibrahima Sall',
-    validatedBy: 'Dr. Aïda Mbaye',
-    createdAt: '2025-04-18T16:30:00.000Z',
-    updatedAt: '2025-04-20T11:20:00.000Z'
-  },
-  {
-    id: '5',
-    userId: '1',
-    userName: 'Dr. Amadou Diop',
-    department: 'Informatique',
-    course: 'Bases de Données',
-    date: '2025-04-19',
-    hours: 3,
-    status: 'refusee',
-    verifiedBy: 'Fatou Ndiaye',
-    rejectedBy: 'Prof. Ibrahima Sall',
-    rejectionReason: 'Incompatibilité avec le calendrier du département',
-    createdAt: '2025-04-19T09:45:00.000Z',
-    updatedAt: '2025-04-20T14:10:00.000Z'
-  },
-  {
-    id: '6',
-    userId: '1',
-    userName: 'Dr. Amadou Diop',
-    department: 'Informatique',
-    course: 'Algorithmique et Programmation',
-    date: '2025-04-20',
-    hours: 2,
-    status: 'en_attente',
-    createdAt: '2025-04-20T08:30:00.000Z',
-    updatedAt: '2025-04-20T08:30:00.000Z'
-  }
-];
-
 const DeclarationContext = createContext<DeclarationContextType | undefined>(undefined);
 
 export function DeclarationProvider({ children }: { children: ReactNode }) {
-  const [declarations, setDeclarations] = useState<Declaration[]>(MOCK_DECLARATIONS);
+  const [declarations, setDeclarations] = useState<Declaration[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const { user } = useAuth();
 
-  const userDeclarations = user 
-    ? declarations.filter(d => d.userId === user.id) 
-    : [];
+  useEffect(() => {
+    if (user) {
+      fetchDeclarations();
+      fetchDepartments();
+      fetchECs(); // courses are called "EC" in the database
+    }
+  }, [user]);
+
+  const fetchDeclarations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fiches')
+        .select(`
+          *,
+          profiles:utilisateur_id (prenom, nom),
+          ec:ec_id (nom_ec),
+          departements:departement_id (nom)
+        `);
+
+      if (error) throw error;
+
+      const mappedDeclarations: Declaration[] = data.map(fiche => ({
+        id: fiche.id,
+        userId: fiche.utilisateur_id,
+        userName: `${fiche.profiles.prenom} ${fiche.profiles.nom}`,
+        department: fiche.departements.nom,
+        course: fiche.ec.nom_ec,
+        date: fiche.date,
+        hoursCM: fiche.hours_cm,
+        hoursTD: fiche.hours_td,
+        hoursTP: fiche.hours_tp,
+        hours: (fiche.hours_cm || 0) + (fiche.hours_td || 0) + (fiche.hours_tp || 0),
+        status: fiche.statut,
+        verifiedBy: fiche.date_verification ? 'Vérifié' : undefined,
+        approvedBy: fiche.date_approbation ? 'Approuvé' : undefined,
+        validatedBy: fiche.date_validation ? 'Validé' : undefined,
+        rejectedBy: fiche.date_rejet ? 'Rejeté' : undefined,
+        rejectionReason: fiche.motif_rejet,
+        createdAt: fiche.date_creation,
+        updatedAt: fiche.date_modification
+      }));
+
+      setDeclarations(mappedDeclarations);
+    } catch (error) {
+      console.error('Error fetching declarations:', error);
+      toast.error('Erreur lors de la récupération des déclarations');
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('departements')
+        .select('*');
+
+      if (error) throw error;
+
+      const mappedDepartments: Department[] = data.map(dept => ({
+        id: dept.id.toString(),
+        name: dept.nom
+      }));
+
+      setDepartments(mappedDepartments);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      toast.error('Erreur lors de la récupération des départements');
+    }
+  };
+
+  const fetchECs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ec')
+        .select(`
+          *,
+          ue:ue_id (
+            nom,
+            semestre:semestre_id (
+              niveau:niveau_id (
+                filiere:filiere_id (
+                  departement:departement_id (*)
+                )
+              )
+            )
+          )
+        `);
+
+      if (error) throw error;
+
+      const mappedCourses: Course[] = data.map(ec => ({
+        id: ec.id.toString(),
+        name: ec.nom_ec,
+        departmentId: ec.ue.semestre.niveau.filiere.departement.id.toString()
+      }));
+
+      setCourses(mappedCourses);
+    } catch (error) {
+      console.error('Error fetching ECs:', error);
+      toast.error('Erreur lors de la récupération des cours');
+    }
+  };
+
+  const userDeclarations = declarations.filter(d => d.userId === user?.id);
 
   const pendingDeclarations = user 
     ? declarations.filter(d => {
@@ -142,74 +144,115 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       })
     : [];
 
-  const createDeclaration = (newDeclaration: Omit<Declaration, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'userName' | 'status'>) => {
+  const createDeclaration = async (newDeclaration: Omit<Declaration, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'userName' | 'status'>) => {
     if (!user) return;
     
-    const now = new Date().toISOString();
-    const declaration: Declaration = {
-      id: Date.now().toString(),
-      userId: user.id,
-      userName: user.name,
-      status: 'en_attente',
-      createdAt: now,
-      updatedAt: now,
-      ...newDeclaration
-    };
-    
-    setDeclarations(prev => [declaration, ...prev]);
-    toast.success('Déclaration créée avec succès');
-  };
+    try {
+      const { error } = await supabase
+        .from('fiches')
+        .insert({
+          utilisateur_id: user.id,
+          departement_id: parseInt(departments.find(d => d.name === newDeclaration.department)?.id || '1'),
+          ec_id: parseInt(courses.find(c => c.name === newDeclaration.course)?.id || '1'),
+          date: newDeclaration.date,
+          hours_cm: newDeclaration.hoursCM,
+          hours_td: newDeclaration.hoursTD,
+          hours_tp: newDeclaration.hoursTP,
+          statut: 'en_attente'
+        });
 
-  const updateDeclaration = (id: string, updates: Partial<Declaration>) => {
-    setDeclarations(prev => 
-      prev.map(d => 
-        d.id === id 
-          ? { 
-              ...d, 
-              ...updates, 
-              updatedAt: new Date().toISOString() 
-            } 
-          : d
-      )
-    );
-    toast.success('Déclaration mise à jour');
-  };
-
-  const deleteDeclaration = (id: string) => {
-    setDeclarations(prev => prev.filter(d => d.id !== id));
-    toast.success('Déclaration supprimée');
-  };
-
-  const updateStatus = (id: string, status: DeclarationStatus, reason?: string) => {
-    if (!user) return;
-    
-    const updates: Partial<Declaration> = { 
-      status, 
-      updatedAt: new Date().toISOString() 
-    };
-    
-    if (status === 'verifiee') {
-      updates.verifiedBy = user.name;
-    } else if (status === 'approuvee') {
-      updates.approvedBy = user.name;
-    } else if (status === 'validee') {
-      updates.validatedBy = user.name;
-    } else if (status === 'refusee') {
-      updates.rejectedBy = user.name;
-      updates.rejectionReason = reason;
+      if (error) throw error;
+      
+      fetchDeclarations(); // Refresh declarations list
+      toast.success('Déclaration créée avec succès');
+    } catch (error) {
+      console.error('Error creating declaration:', error);
+      toast.error('Erreur lors de la création de la déclaration');
     }
+  };
+
+  const updateDeclaration = async (id: string, updates: Partial<Declaration>) => {
+    try {
+      const { error } = await supabase
+        .from('fiches')
+        .update({
+          date: updates.date,
+          hours_cm: updates.hoursCM,
+          hours_td: updates.hoursTD,
+          hours_tp: updates.hoursTP,
+          date_modification: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      fetchDeclarations(); // Refresh declarations list
+      toast.success('Déclaration mise à jour');
+    } catch (error) {
+      console.error('Error updating declaration:', error);
+      toast.error('Erreur lors de la mise à jour de la déclaration');
+    }
+  };
+
+  const deleteDeclaration = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('fiches')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      fetchDeclarations(); // Refresh declarations list
+      toast.success('Déclaration supprimée');
+    } catch (error) {
+      console.error('Error deleting declaration:', error);
+      toast.error('Erreur lors de la suppression de la déclaration');
+    }
+  };
+
+  const updateStatus = async (id: string, status: DeclarationStatus, reason?: string) => {
+    if (!user) return;
     
-    updateDeclaration(id, updates);
-    
-    const statusMessages = {
-      verifiee: 'vérifiée',
-      approuvee: 'approuvée',
-      validee: 'validée',
-      refusee: 'rejetée',
-      en_attente: 'soumise'
-    };
-    
-    toast.success(`Déclaration ${statusMessages[status]} avec succès`);
+    try {
+      const updates: any = {
+        statut: status,
+        date_modification: new Date().toISOString()
+      };
+
+      if (status === 'verifiee') {
+        updates.date_verification = new Date().toISOString();
+      } else if (status === 'approuvee') {
+        updates.date_approbation = new Date().toISOString();
+      } else if (status === 'validee') {
+        updates.date_validation = new Date().toISOString();
+      } else if (status === 'refusee') {
+        updates.date_rejet = new Date().toISOString();
+        updates.motif_rejet = reason;
+      }
+
+      const { error } = await supabase
+        .from('fiches')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      fetchDeclarations(); // Refresh declarations list
+      
+      const statusMessages = {
+        verifiee: 'vérifiée',
+        approuvee: 'approuvée',
+        validee: 'validée',
+        refusee: 'rejetée',
+        en_attente: 'soumise'
+      };
+      
+      toast.success(`Déclaration ${statusMessages[status]} avec succès`);
+    } catch (error) {
+      console.error('Error updating declaration status:', error);
+      toast.error('Erreur lors de la mise à jour du statut');
+    }
   };
 
   const getDeclarationById = (id: string) => {
@@ -282,8 +325,8 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
   return (
     <DeclarationContext.Provider value={{
       declarations,
-      departments: MOCK_DEPARTMENTS,
-      courses: MOCK_COURSES,
+      departments,
+      courses,
       userDeclarations,
       pendingDeclarations,
       createDeclaration,

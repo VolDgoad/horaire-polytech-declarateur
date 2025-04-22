@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
 import { toast } from '@/components/ui/sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   user: User | null;
@@ -12,76 +14,79 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo purposes
-const MOCK_USERS: User[] = [
-  {
-    id: '1',
-    name: 'Dr. Amadou Diop',
-    email: 'enseignant@polytech.edu',
-    role: 'Enseignant',
-    department: 'Informatique'
-  },
-  {
-    id: '2',
-    name: 'Fatou Ndiaye',
-    email: 'scolarite@polytech.edu',
-    role: 'Scolarité'
-  },
-  {
-    id: '3',
-    name: 'Prof. Ibrahima Sall',
-    email: 'chef@polytech.edu',
-    role: 'Chef de département',
-    department: 'Informatique'
-  },
-  {
-    id: '4',
-    name: 'Dr. Aïda Mbaye',
-    email: 'directrice@polytech.edu',
-    role: 'Directrice des études'
-  }
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved user in localStorage
-    const savedUser = localStorage.getItem('polytechUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await fetchUserProfile(session.user.id);
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        const userProfile: User = {
+          id: data.id,
+          name: `${data.prenom} ${data.nom}`,
+          email: data.email,
+          role: data.role,
+          department: data.departement_id ? 'Informatique' : undefined // We'll need to fetch department name later
+        };
+        setUser(userProfile);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      toast.error("Erreur lors de la récupération du profil");
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
-      // Simulate API call with a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      const user = MOCK_USERS.find(u => u.email === email);
-      
-      if (!user) {
-        throw new Error('Identifiants invalides');
+      if (error) {
+        throw error;
       }
       
-      // In a real app, you'd validate the password here
-      if (password.length < 6) {
-        throw new Error('Mot de passe invalide');
-      }
-      
-      setUser(user);
-      localStorage.setItem('polytechUser', JSON.stringify(user));
       toast.success('Connexion réussie');
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Une erreur est survenue lors de la connexion');
-      }
+    } catch (error: any) {
+      toast.error(error.message || 'Une erreur est survenue lors de la connexion');
       throw error;
     } finally {
       setIsLoading(false);
@@ -92,43 +97,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      // Simulate API call with a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Split name into first and last name
+      const [prenom, ...nomParts] = name.split(' ');
+      const nom = nomParts.join(' ');
       
-      // Check if user already exists
-      if (MOCK_USERS.some(u => u.email === email)) {
-        throw new Error('Un utilisateur avec cet email existe déjà');
-      }
-      
-      // Create new user (in a real app, this would be handled by Supabase)
-      const newUser: User = {
-        id: String(MOCK_USERS.length + 1),
-        name,
+      const { error } = await supabase.auth.signUp({
         email,
-        role: 'Enseignant',
-        department: 'Informatique'
-      };
+        password,
+        options: {
+          data: {
+            prenom,
+            nom
+          }
+        }
+      });
       
-      MOCK_USERS.push(newUser);
-      setUser(newUser);
-      localStorage.setItem('polytechUser', JSON.stringify(newUser));
-      toast.success('Inscription réussie');
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Une erreur est survenue lors de l\'inscription');
+      if (error) {
+        throw error;
       }
+      
+      toast.success('Inscription réussie');
+    } catch (error: any) {
+      toast.error(error.message || 'Une erreur est survenue lors de l\'inscription');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('polytechUser');
-    toast.success('Vous êtes déconnecté');
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      setUser(null);
+      toast.success('Vous êtes déconnecté');
+    } catch (error: any) {
+      toast.error(error.message || 'Une erreur est survenue lors de la déconnexion');
+    }
   };
 
   return (
