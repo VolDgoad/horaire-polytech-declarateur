@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Declaration, DeclarationStatus, Stats, Department, Course } from '@/types';
 import { useAuth } from './AuthContext';
@@ -42,7 +41,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
         .select(`
           *,
           profiles:utilisateur_id (prenom, nom),
-          ec:ec_id (nom_ec),
+          ec:ec_id (nom_ec, ue_id),
           departements:departement_id (nom)
         `);
 
@@ -60,11 +59,11 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
         hoursTP: fiche.hours_tp,
         hours: (fiche.hours_cm || 0) + (fiche.hours_td || 0) + (fiche.hours_tp || 0),
         status: fiche.statut,
-        verifiedBy: fiche.date_verification ? 'Vérifié' : undefined,
-        approvedBy: fiche.date_approbation ? 'Approuvé' : undefined,
+        verifiedBy: fiche.date_validation ? 'Vérifié' : undefined,
+        approvedBy: fiche.date_approbation_finale ? 'Approuvé' : undefined,
         validatedBy: fiche.date_validation ? 'Validé' : undefined,
         rejectedBy: fiche.date_rejet ? 'Rejeté' : undefined,
-        rejectionReason: fiche.motif_rejet,
+        rejectionReason: fiche.etat_paiement,
         createdAt: fiche.date_creation,
         updatedAt: fiche.date_modification
       }));
@@ -148,12 +147,32 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     try {
+      const courseObj = courses.find(c => c.name === newDeclaration.course);
+      if (!courseObj) {
+        toast.error('Cours non trouvé');
+        return;
+      }
+      
+      const { data: ecData, error: ecError } = await supabase
+        .from('ec')
+        .select('ue_id')
+        .eq('id', parseInt(courseObj.id))
+        .single();
+        
+      if (ecError) throw ecError;
+      
+      if (!ecData || !ecData.ue_id) {
+        toast.error('Données du cours incomplètes');
+        return;
+      }
+
       const { error } = await supabase
         .from('fiches')
         .insert({
           utilisateur_id: user.id,
           departement_id: parseInt(departments.find(d => d.name === newDeclaration.department)?.id || '1'),
-          ec_id: parseInt(courses.find(c => c.name === newDeclaration.course)?.id || '1'),
+          ec_id: parseInt(courseObj.id),
+          ue_id: ecData.ue_id,
           date: newDeclaration.date,
           hours_cm: newDeclaration.hoursCM,
           hours_td: newDeclaration.hoursTD,
@@ -194,23 +213,6 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const deleteDeclaration = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('fiches')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      fetchDeclarations(); // Refresh declarations list
-      toast.success('Déclaration supprimée');
-    } catch (error) {
-      console.error('Error deleting declaration:', error);
-      toast.error('Erreur lors de la suppression de la déclaration');
-    }
-  };
-
   const updateStatus = async (id: string, status: DeclarationStatus, reason?: string) => {
     if (!user) return;
     
@@ -221,14 +223,14 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       };
 
       if (status === 'verifiee') {
-        updates.date_verification = new Date().toISOString();
+        updates.date_validation = new Date().toISOString();
       } else if (status === 'approuvee') {
-        updates.date_approbation = new Date().toISOString();
+        updates.date_approbation_finale = new Date().toISOString();
       } else if (status === 'validee') {
         updates.date_validation = new Date().toISOString();
       } else if (status === 'refusee') {
         updates.date_rejet = new Date().toISOString();
-        updates.motif_rejet = reason;
+        updates.etat_paiement = reason;
       }
 
       const { error } = await supabase
@@ -252,6 +254,23 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error updating declaration status:', error);
       toast.error('Erreur lors de la mise à jour du statut');
+    }
+  };
+
+  const deleteDeclaration = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('fiches')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      fetchDeclarations(); // Refresh declarations list
+      toast.success('Déclaration supprimée');
+    } catch (error) {
+      console.error('Error deleting declaration:', error);
+      toast.error('Erreur lors de la suppression de la déclaration');
     }
   };
 
