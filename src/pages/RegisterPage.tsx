@@ -94,6 +94,21 @@ export default function RegisterPage() {
     'Assistant ne dispensant pas de Cours Magistraux'
   ];
 
+  // Function to handle grade change with correct typing
+  const handleGradeChange = (value: string) => {
+    setGrade(value as TeacherGrade);
+  };
+
+  // Function to handle role change with correct typing
+  const handleRoleChange = (value: string) => {
+    setRole(value as UserRole);
+  };
+
+  // Function to handle department change
+  const handleDepartmentChange = (value: string) => {
+    setDepartmentId(value);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-polytech-light p-4">
       <div className="w-full max-w-md">
@@ -159,7 +174,7 @@ export default function RegisterPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="role">Rôle</Label>
-                <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                <Select value={role} onValueChange={handleRoleChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionnez votre rôle" />
                   </SelectTrigger>
@@ -176,7 +191,7 @@ export default function RegisterPage() {
               {role === 'Enseignant' && (
                 <div className="space-y-2">
                   <Label htmlFor="grade">Grade</Label>
-                  <Select value={grade} onValueChange={setGrade}>
+                  <Select value={grade} onValueChange={handleGradeChange}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Sélectionnez votre grade" />
                     </SelectTrigger>
@@ -194,7 +209,7 @@ export default function RegisterPage() {
               {role === 'Chef de département' && (
                 <div className="space-y-2">
                   <Label htmlFor="department">Département</Label>
-                  <Select value={departmentId} onValueChange={setDepartmentId}>
+                  <Select value={departmentId} onValueChange={handleDepartmentChange}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Sélectionnez votre département" />
                     </SelectTrigger>
