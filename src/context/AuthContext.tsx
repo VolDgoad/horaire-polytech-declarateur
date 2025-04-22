@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
 import { toast } from '@/components/ui/sonner';
@@ -8,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, metadata: Record<string, any>) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -93,22 +92,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string, name: string) => {
+  const signup = async (email: string, password: string, metadata: Record<string, any>) => {
     setIsLoading(true);
     
     try {
-      // Split name into first and last name
-      const [prenom, ...nomParts] = name.split(' ');
-      const nom = nomParts.join(' ');
-      
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            prenom,
-            nom
-          }
+          data: metadata
         }
       });
       
