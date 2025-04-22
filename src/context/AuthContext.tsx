@@ -27,10 +27,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           await fetchUserProfile(session.user.id);
+        } else {
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Session initialization error:', error);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      // Updated query to use the new RLS policies
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -71,13 +73,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
+        // First get department name if department ID exists
+        let departmentName;
+        if (data.departement_id) {
+          const { data: deptData, error: deptError } = await supabase
+            .from('departements')
+            .select('nom')
+            .eq('id', data.departement_id)
+            .single();
+            
+          if (!deptError && deptData) {
+            departmentName = deptData.nom;
+          }
+        }
+
         const userProfile: User = {
           id: data.id,
           name: `${data.prenom} ${data.nom}`,
           email: data.email,
           role: data.role,
-          department: data.departement_id ? 'Informatique' : undefined // We'll need to fetch department name later
+          department: departmentName || undefined,
+          grade: data.grade || undefined
         };
+        
         setUser(userProfile);
       } else {
         setUser(null);
