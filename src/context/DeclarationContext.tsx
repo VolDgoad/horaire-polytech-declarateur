@@ -2,7 +2,13 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Declaration, DeclarationStatus, Stats, Department, Course } from '@/types';
 import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/sonner';
-import { supabase, getProfilesByIds } from '@/integrations/supabase/client';
+import { 
+  supabase, 
+  getProfilesByIds, 
+  getAllDepartments, 
+  getAllECs, 
+  getAllFiches 
+} from '@/integrations/supabase/client';
 
 interface DeclarationContextType {
   declarations: Declaration[];
@@ -36,12 +42,12 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
   const fetchDeclarations = async () => {
     try {
-      // First, fetch declarations without joins to avoid RLS recursion
-      const { data: rawDeclarations, error: declarationsError } = await supabase
-        .from('fiches')
-        .select('*');
-      
-      if (declarationsError) throw declarationsError;
+      // Fetch declarations using our safe function
+      const rawDeclarations = await getAllFiches();
+      if (!rawDeclarations || rawDeclarations.length === 0) {
+        setDeclarations([]);
+        return;
+      }
       
       // Then get profiles data separately using our security definer function
       const userIds = [...new Set(rawDeclarations.map(d => d.utilisateur_id))];
@@ -121,14 +127,10 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
   const fetchDepartments = async () => {
     try {
-      // Use a direct table access with no joins
-      const { data, error } = await supabase
-        .from('departements')
-        .select('id, nom');
-
-      if (error) throw error;
-
-      const mappedDepartments: Department[] = data.map(dept => ({
+      // Use our safe departments helper function
+      const deptsData = await getAllDepartments();
+      
+      const mappedDepartments: Department[] = (deptsData || []).map(dept => ({
         id: dept.id.toString(),
         name: dept.nom
       }));
@@ -142,15 +144,10 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
   const fetchECs = async () => {
     try {
-      // First fetch ECs without joins
-      const { data: ecData, error: ecError } = await supabase
-        .from('ec')
-        .select('id, nom_ec, ue_id');
+      // Use our safe ECs helper function
+      const ecsData = await getAllECs();
       
-      if (ecError) throw ecError;
-      
-      // Then fetch UE data separately
-      const ueIds = [...new Set(ecData.map(ec => ec.ue_id))];
+      // We still need to fetch related data to map department IDs
       const { data: ueData, error: ueError } = await supabase
         .from('ue')
         .select('id, nom, semestre_id');
@@ -218,7 +215,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       });
       
       // Now map all the data together
-      const mappedCourses: Course[] = ecData.map(ec => {
+      const mappedCourses: Course[] = (ecsData || []).map(ec => {
         let departmentId = '';
         
         // Try to find the department ID by following the relationships

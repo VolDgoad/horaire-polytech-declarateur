@@ -38,3 +38,60 @@ export async function getProfilesByIds(userIds: string[]) {
     return [];
   }
 }
+
+// Helper to get departments without recursion issues
+export async function getAllDepartments() {
+  try {
+    // Use a direct RPC call instead of table access
+    const { data, error } = await supabase
+      .rpc('get_all_departments');
+    
+    if (error) {
+      console.error('Error getting departments:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Exception getting departments:', error);
+    return [];
+  }
+}
+
+// Helper to get EC (courses) without recursion issues
+export async function getAllECs() {
+  try {
+    // Use a direct RPC call instead of table access
+    const { data, error } = await supabase
+      .rpc('get_all_ecs');
+    
+    if (error) {
+      console.error('Error getting ECs:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Exception getting ECs:', error);
+    return [];
+  }
+}
+
+// Helper to get fiches (declarations) without recursion issues
+export async function getAllFiches() {
+  try {
+    // Use a direct RPC call instead of table access
+    const { data, error } = await supabase
+      .rpc('get_all_fiches');
+    
+    if (error) {
+      console.error('Error getting fiches:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Exception getting fiches:', error);
+    return [];
+  }
+}
