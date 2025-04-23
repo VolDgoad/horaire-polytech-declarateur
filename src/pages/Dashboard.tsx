@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { StatsCards } from '@/components/dashboard/StatsCards';
 import { RecentDeclarations } from '@/components/dashboard/RecentDeclarations';
+import { DeclarationProvider } from '@/context/DeclarationContext';
 
 export default function Dashboard() {
   const { user } = useAuth();

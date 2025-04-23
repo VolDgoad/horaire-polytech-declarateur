@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,7 +18,7 @@ import RegisterPage from "./pages/RegisterPage";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   
   if (isLoading) {
@@ -28,7 +29,19 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
   
-  return <>{children}</>;
+  return (
+    <DeclarationProvider>
+      {children}
+    </DeclarationProvider>
+  );
+}
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <RequireAuth>
+      {children}
+    </RequireAuth>
+  );
 };
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
@@ -69,74 +82,72 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <DeclarationProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={
-                <PublicRoute>
-                  <LoginPage />
-                </PublicRoute>
-              } />
-              <Route path="/register" element={
-                <PublicRoute>
-                  <RegisterPage />
-                </PublicRoute>
-              } />
-              
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/declarations" element={
-                <ProtectedRoute>
-                  <TeacherRoute>
-                    <DeclarationsPage />
-                  </TeacherRoute>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/declarations/new" element={
-                <ProtectedRoute>
-                  <TeacherRoute>
-                    <NewDeclarationPage />
-                  </TeacherRoute>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/declarations/:id" element={
-                <ProtectedRoute>
-                  <TeacherRoute>
-                    <DeclarationDetailPage />
-                  </TeacherRoute>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/validations" element={
-                <ProtectedRoute>
-                  <ValidatorRoute>
-                    <ValidationsPage />
-                  </ValidatorRoute>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/validations/:id" element={
-                <ProtectedRoute>
-                  <ValidatorRoute>
-                    <ValidationDetailPage />
-                  </ValidatorRoute>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </DeclarationProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            } />
+            <Route path="/register" element={
+              <PublicRoute>
+                <RegisterPage />
+              </PublicRoute>
+            } />
+            
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/declarations" element={
+              <ProtectedRoute>
+                <TeacherRoute>
+                  <DeclarationsPage />
+                </TeacherRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/declarations/new" element={
+              <ProtectedRoute>
+                <TeacherRoute>
+                  <NewDeclarationPage />
+                </TeacherRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/declarations/:id" element={
+              <ProtectedRoute>
+                <TeacherRoute>
+                  <DeclarationDetailPage />
+                </TeacherRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/validations" element={
+              <ProtectedRoute>
+                <ValidatorRoute>
+                  <ValidationsPage />
+                </ValidatorRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/validations/:id" element={
+              <ProtectedRoute>
+                <ValidatorRoute>
+                  <ValidationDetailPage />
+                </ValidatorRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
