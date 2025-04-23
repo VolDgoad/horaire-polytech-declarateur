@@ -24,8 +24,8 @@ export async function getProfilesByIds(userIds: string[]) {
   if (!userIds || userIds.length === 0) return [];
   
   try {
-    const { data, error } = await supabase
-      .rpc('get_profiles_by_ids', { user_ids: userIds });
+    // Using any here because we need to override TypeScript's understanding of the function
+    const { data, error } = await (supabase.rpc as any)('get_profiles_by_ids', { user_ids: userIds });
     
     if (error) {
       console.error('Error getting profiles by IDs:', error);
@@ -43,8 +43,7 @@ export async function getProfilesByIds(userIds: string[]) {
 export async function getAllDepartments() {
   try {
     // Use a direct RPC call instead of table access
-    const { data, error } = await supabase
-      .rpc('get_all_departments');
+    const { data, error } = await (supabase.rpc as any)('get_all_departments');
     
     if (error) {
       console.error('Error getting departments:', error);
@@ -62,8 +61,7 @@ export async function getAllDepartments() {
 export async function getAllECs() {
   try {
     // Use a direct RPC call instead of table access
-    const { data, error } = await supabase
-      .rpc('get_all_ecs');
+    const { data, error } = await (supabase.rpc as any)('get_all_ecs');
     
     if (error) {
       console.error('Error getting ECs:', error);
@@ -81,8 +79,7 @@ export async function getAllECs() {
 export async function getAllFiches() {
   try {
     // Use a direct RPC call instead of table access
-    const { data, error } = await supabase
-      .rpc('get_all_fiches');
+    const { data, error } = await (supabase.rpc as any)('get_all_fiches');
     
     if (error) {
       console.error('Error getting fiches:', error);

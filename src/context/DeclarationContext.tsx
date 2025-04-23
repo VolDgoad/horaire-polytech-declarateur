@@ -44,7 +44,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
     try {
       // Fetch declarations using our safe function
       const rawDeclarations = await getAllFiches();
-      if (!rawDeclarations || rawDeclarations.length === 0) {
+      if (!rawDeclarations || !Array.isArray(rawDeclarations) || rawDeclarations.length === 0) {
         setDeclarations([]);
         return;
       }
@@ -58,7 +58,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       const { data: depts, error: deptsError } = await supabase
         .from('departements')
         .select('id, nom')
-        .in('id', departmentIds);
+        .in('id', departmentIds as number[]);
       
       if (deptsError) {
         console.error("Error fetching departments:", deptsError);
@@ -70,7 +70,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       const { data: ecs, error: ecsError } = await supabase
         .from('ec')
         .select('id, nom_ec')
-        .in('id', ecIds);
+        .in('id', ecIds as number[]);
       
       if (ecsError) {
         console.error("Error fetching ECs:", ecsError);
@@ -78,9 +78,10 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       }
       
       // Map to create full declaration objects
-      const profilesMap = new Map(
-        profiles.map(p => [p.id, { prenom: p.prenom, nom: p.nom }])
-      );
+      const profilesMap = Array.isArray(profiles) ? 
+        new Map(
+          profiles.map(p => [p.id, { prenom: p.prenom, nom: p.nom }])
+        ) : new Map();
       
       const deptsMap = new Map(
         (depts || []).map(d => [d.id, d.nom])
@@ -130,7 +131,13 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       // Use our safe departments helper function
       const deptsData = await getAllDepartments();
       
-      const mappedDepartments: Department[] = (deptsData || []).map(dept => ({
+      if (!Array.isArray(deptsData)) {
+        console.error('Departments data is not an array:', deptsData);
+        setDepartments([]);
+        return;
+      }
+      
+      const mappedDepartments: Department[] = deptsData.map(dept => ({
         id: dept.id.toString(),
         name: dept.nom
       }));
@@ -146,6 +153,12 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
     try {
       // Use our safe ECs helper function
       const ecsData = await getAllECs();
+      
+      if (!Array.isArray(ecsData)) {
+        console.error('ECs data is not an array:', ecsData);
+        setCourses([]);
+        return;
+      }
       
       // We still need to fetch related data to map department IDs
       const { data: ueData, error: ueError } = await supabase
@@ -215,7 +228,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       });
       
       // Now map all the data together
-      const mappedCourses: Course[] = (ecsData || []).map(ec => {
+      const mappedCourses: Course[] = ecsData.map(ec => {
         let departmentId = '';
         
         // Try to find the department ID by following the relationships
@@ -243,7 +256,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const userDeclarations = declarations.filter(d => d.userId === user?.id);
+  const userDeclarations = user ? declarations.filter(d => d.userId === user.id) : [];
 
   const pendingDeclarations = user 
     ? declarations.filter(d => {
