@@ -24,7 +24,8 @@ export async function getProfilesByIds(userIds: string[]) {
   if (!userIds || userIds.length === 0) return [];
   
   try {
-    const { data, error } = await supabase.rpc('get_profiles_by_ids', { user_ids: userIds });
+    const { data, error } = await supabase
+      .rpc('get_profiles_by_ids', { user_ids: userIds });
     
     if (error) {
       console.error('Error getting profiles by IDs:', error);

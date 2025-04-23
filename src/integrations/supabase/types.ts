@@ -391,6 +391,24 @@ export type Database = {
           updated_at: string
         }
       }
+      get_profiles_by_ids: {
+        Args: { user_ids: string[] }
+        Returns: {
+          created_at: string
+          departement_id: number | null
+          email: string
+          grade: Database["public"]["Enums"]["teacher_grade"] | null
+          id: string
+          nom: string
+          photo: string | null
+          prenom: string
+          reset_expiry: string | null
+          reset_token: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          signature: string | null
+          updated_at: string
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]

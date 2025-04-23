@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Declaration, DeclarationStatus, Stats, Department, Course } from '@/types';
 import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getProfilesByIds } from '@/integrations/supabase/client';
 
 interface DeclarationContextType {
   declarations: Declaration[];
@@ -43,15 +43,9 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       
       if (declarationsError) throw declarationsError;
       
-      // Then get profiles data separately
+      // Then get profiles data separately using our security definer function
       const userIds = [...new Set(rawDeclarations.map(d => d.utilisateur_id))];
-      const { data: profiles, error: profilesError } = await supabase
-        .rpc('get_profiles_by_ids', { user_ids: userIds });
-      
-      if (profilesError) {
-        console.error("Error fetching profiles:", profilesError);
-        // Continue with partial data
-      }
+      const profiles = await getProfilesByIds(userIds);
       
       // Get departments data separately
       const departmentIds = [...new Set(rawDeclarations.map(d => d.departement_id))];
@@ -79,7 +73,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       
       // Map to create full declaration objects
       const profilesMap = new Map(
-        (profiles || []).map(p => [p.id, { prenom: p.prenom, nom: p.nom }])
+        profiles.map(p => [p.id, { prenom: p.prenom, nom: p.nom }])
       );
       
       const deptsMap = new Map(
