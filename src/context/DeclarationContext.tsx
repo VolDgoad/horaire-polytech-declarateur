@@ -36,37 +36,87 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
   const fetchDeclarations = async () => {
     try {
-      const { data, error } = await supabase
+      // First, fetch declarations without joins to avoid RLS recursion
+      const { data: rawDeclarations, error: declarationsError } = await supabase
         .from('fiches')
-        .select(`
-          *,
-          profiles:utilisateur_id (prenom, nom),
-          ec:ec_id (nom_ec, ue_id),
-          departements:departement_id (nom)
-        `);
-
-      if (error) throw error;
-
-      const mappedDeclarations: Declaration[] = data.map(fiche => ({
-        id: fiche.id,
-        userId: fiche.utilisateur_id,
-        userName: `${fiche.profiles.prenom} ${fiche.profiles.nom}`,
-        department: fiche.departements.nom,
-        course: fiche.ec.nom_ec,
-        date: fiche.date,
-        hoursCM: fiche.hours_cm,
-        hoursTD: fiche.hours_td,
-        hoursTP: fiche.hours_tp,
-        hours: (fiche.hours_cm || 0) + (fiche.hours_td || 0) + (fiche.hours_tp || 0),
-        status: fiche.statut,
-        verifiedBy: fiche.date_validation ? 'Vérifié' : undefined,
-        approvedBy: fiche.date_approbation_finale ? 'Approuvé' : undefined,
-        validatedBy: fiche.date_validation ? 'Validé' : undefined,
-        rejectedBy: fiche.date_rejet ? 'Rejeté' : undefined,
-        rejectionReason: fiche.etat_paiement,
-        createdAt: fiche.date_creation,
-        updatedAt: fiche.date_modification
-      }));
+        .select('*');
+      
+      if (declarationsError) throw declarationsError;
+      
+      // Then get profiles data separately
+      const userIds = [...new Set(rawDeclarations.map(d => d.utilisateur_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .rpc('get_profiles_by_ids', { user_ids: userIds });
+      
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+        // Continue with partial data
+      }
+      
+      // Get departments data separately
+      const departmentIds = [...new Set(rawDeclarations.map(d => d.departement_id))];
+      const { data: depts, error: deptsError } = await supabase
+        .from('departements')
+        .select('id, nom')
+        .in('id', departmentIds);
+      
+      if (deptsError) {
+        console.error("Error fetching departments:", deptsError);
+        // Continue with partial data
+      }
+      
+      // Get EC (courses) data separately
+      const ecIds = [...new Set(rawDeclarations.map(d => d.ec_id))];
+      const { data: ecs, error: ecsError } = await supabase
+        .from('ec')
+        .select('id, nom_ec')
+        .in('id', ecIds);
+      
+      if (ecsError) {
+        console.error("Error fetching ECs:", ecsError);
+        // Continue with partial data
+      }
+      
+      // Map to create full declaration objects
+      const profilesMap = new Map(
+        (profiles || []).map(p => [p.id, { prenom: p.prenom, nom: p.nom }])
+      );
+      
+      const deptsMap = new Map(
+        (depts || []).map(d => [d.id, d.nom])
+      );
+      
+      const ecsMap = new Map(
+        (ecs || []).map(e => [e.id, e.nom_ec])
+      );
+      
+      const mappedDeclarations: Declaration[] = rawDeclarations.map(fiche => {
+        const profile = profilesMap.get(fiche.utilisateur_id);
+        const userName = profile ? `${profile.prenom} ${profile.nom}` : 'Utilisateur inconnu';
+        const department = deptsMap.get(fiche.departement_id) || 'Département inconnu';
+        const course = ecsMap.get(fiche.ec_id) || 'Cours inconnu';
+        
+        return {
+          id: fiche.id,
+          userId: fiche.utilisateur_id,
+          userName: userName,
+          department: department,
+          course: course,
+          date: fiche.date,
+          hoursCM: fiche.hours_cm,
+          hoursTD: fiche.hours_td,
+          hoursTP: fiche.hours_tp,
+          hours: (fiche.hours_cm || 0) + (fiche.hours_td || 0) + (fiche.hours_tp || 0),
+          status: fiche.statut,
+          verifiedBy: fiche.date_validation ? 'Vérifié' : undefined,
+          approvedBy: fiche.date_approbation_finale ? 'Approuvé' : undefined,
+          validatedBy: fiche.date_validation ? 'Validé' : undefined,
+          rejectedBy: fiche.date_rejet ? 'Rejeté' : undefined,
+          rejectionReason: fiche.etat_paiement,
+          createdAt: fiche.date_creation,
+          updatedAt: fiche.date_modification
+        };
+      });
 
       setDeclarations(mappedDeclarations);
     } catch (error) {
@@ -77,9 +127,10 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
   const fetchDepartments = async () => {
     try {
+      // Use a direct table access with no joins
       const { data, error } = await supabase
         .from('departements')
-        .select('*');
+        .select('id, nom');
 
       if (error) throw error;
 
@@ -97,29 +148,102 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
   const fetchECs = async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch ECs without joins
+      const { data: ecData, error: ecError } = await supabase
         .from('ec')
-        .select(`
-          *,
-          ue:ue_id (
-            nom,
-            semestre:semestre_id (
-              niveau:niveau_id (
-                filiere:filiere_id (
-                  departement:departement_id (*)
-                )
-              )
-            )
-          )
-        `);
-
-      if (error) throw error;
-
-      const mappedCourses: Course[] = data.map(ec => ({
-        id: ec.id.toString(),
-        name: ec.nom_ec,
-        departmentId: ec.ue.semestre.niveau.filiere.departement.id.toString()
-      }));
+        .select('id, nom_ec, ue_id');
+      
+      if (ecError) throw ecError;
+      
+      // Then fetch UE data separately
+      const ueIds = [...new Set(ecData.map(ec => ec.ue_id))];
+      const { data: ueData, error: ueError } = await supabase
+        .from('ue')
+        .select('id, nom, semestre_id');
+      
+      if (ueError) {
+        console.error('Error fetching UEs:', ueError);
+        // Continue with partial data
+      }
+      
+      // Create a map of UE ID to semestre_id
+      const ueMap = new Map();
+      (ueData || []).forEach(ue => {
+        ueMap.set(ue.id, ue.semestre_id);
+      });
+      
+      // Fetch semestres
+      const semestreIds = [...new Set((ueData || []).map(ue => ue.semestre_id))];
+      const { data: semestres, error: semestresError } = await supabase
+        .from('semestres')
+        .select('id, niveau_id');
+      
+      if (semestresError) {
+        console.error('Error fetching semestres:', semestresError);
+        // Continue with partial data
+      }
+      
+      // Create map of semestre ID to niveau_id
+      const semestreMap = new Map();
+      (semestres || []).forEach(semestre => {
+        semestreMap.set(semestre.id, semestre.niveau_id);
+      });
+      
+      // Fetch niveaux
+      const niveauIds = [...new Set((semestres || []).map(s => s.niveau_id))];
+      const { data: niveaux, error: niveauxError } = await supabase
+        .from('niveaux')
+        .select('id, filiere_id');
+      
+      if (niveauxError) {
+        console.error('Error fetching niveaux:', niveauxError);
+        // Continue with partial data
+      }
+      
+      // Create map of niveau ID to filiere_id
+      const niveauMap = new Map();
+      (niveaux || []).forEach(niveau => {
+        niveauMap.set(niveau.id, niveau.filiere_id);
+      });
+      
+      // Fetch filieres
+      const filiereIds = [...new Set((niveaux || []).map(n => n.filiere_id))];
+      const { data: filieres, error: filieresError } = await supabase
+        .from('filieres')
+        .select('id, departement_id');
+      
+      if (filieresError) {
+        console.error('Error fetching filieres:', filieresError);
+        // Continue with partial data
+      }
+      
+      // Create map of filiere ID to departement_id
+      const filiereMap = new Map();
+      (filieres || []).forEach(filiere => {
+        filiereMap.set(filiere.id, filiere.departement_id);
+      });
+      
+      // Now map all the data together
+      const mappedCourses: Course[] = ecData.map(ec => {
+        let departmentId = '';
+        
+        // Try to find the department ID by following the relationships
+        const ueId = ec.ue_id;
+        const semestreId = ueMap.get(ueId);
+        const niveauId = semestreId ? semestreMap.get(semestreId) : null;
+        const filiereId = niveauId ? niveauMap.get(niveauId) : null;
+        const deptId = filiereId ? filiereMap.get(filiereId) : null;
+        
+        if (deptId) {
+          departmentId = deptId.toString();
+        }
+        
+        return {
+          id: ec.id.toString(),
+          name: ec.nom_ec,
+          departmentId: departmentId
+        };
+      });
 
       setCourses(mappedCourses);
     } catch (error) {
