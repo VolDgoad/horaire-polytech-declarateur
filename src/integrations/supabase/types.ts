@@ -373,6 +373,91 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_all_departments: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: number
+          nom: string
+          updated_at: string
+        }[]
+      }
+      get_all_ecs: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: number
+          nom_ec: string
+          ue_id: number
+          updated_at: string
+        }[]
+      }
+      get_all_fiches: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          date: string
+          date_approbation_finale: string | null
+          date_creation: string
+          date_modification: string
+          date_rejet: string | null
+          date_validation: string | null
+          departement_id: number
+          ec_id: number
+          etat_paiement: string | null
+          filiere_id: number | null
+          hours_cm: number | null
+          hours_td: number | null
+          hours_tp: number | null
+          id: string
+          niveau_id: number | null
+          nom_ec: string | null
+          semestre_id: number | null
+          signature: string | null
+          statut: Database["public"]["Enums"]["declaration_status"]
+          ue_id: number
+          utilisateur_id: string
+        }[]
+      }
+      get_all_filieres: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          departement_id: number
+          id: number
+          nom: string
+          updated_at: string
+        }[]
+      }
+      get_all_niveaux: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          filiere_id: number | null
+          id: number
+          nom: string
+          updated_at: string
+        }[]
+      }
+      get_all_semestres: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: number
+          niveau_id: number
+          nom: string
+          updated_at: string
+        }[]
+      }
+      get_all_ues: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: number
+          nom: string
+          semestre_id: number
+          updated_at: string
+        }[]
+      }
       get_current_user_profile: {
         Args: Record<PropertyKey, never>
         Returns: {

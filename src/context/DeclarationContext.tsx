@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Declaration, DeclarationStatus, Stats, Department, Course } from '@/types';
 import { useAuth } from './AuthContext';
@@ -7,7 +8,11 @@ import {
   getProfilesByIds, 
   getAllDepartments, 
   getAllECs, 
-  getAllFiches 
+  getAllFiches,
+  getAllUEs,
+  getAllSemestres,
+  getAllNiveaux,
+  getAllFilieres 
 } from '@/integrations/supabase/client';
 
 interface DeclarationContextType {
@@ -36,7 +41,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
     if (user) {
       fetchDeclarations();
       fetchDepartments();
-      fetchECs(); // courses are called "EC" in the database
+      fetchECs();
     }
   }, [user]);
 
@@ -54,41 +59,46 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       const profiles = await getProfilesByIds(userIds);
       
       // Get departments data separately
-      const departmentIds = [...new Set(rawDeclarations.map(d => d.departement_id))];
-      const { data: depts, error: deptsError } = await supabase
-        .from('departements')
-        .select('id, nom')
-        .in('id', departmentIds as number[]);
-      
-      if (deptsError) {
-        console.error("Error fetching departments:", deptsError);
-        // Continue with partial data
-      }
+      const deptsData = await getAllDepartments();
       
       // Get EC (courses) data separately
-      const ecIds = [...new Set(rawDeclarations.map(d => d.ec_id))];
-      const { data: ecs, error: ecsError } = await supabase
-        .from('ec')
-        .select('id, nom_ec')
-        .in('id', ecIds as number[]);
+      const ecsData = await getAllECs();
       
-      if (ecsError) {
-        console.error("Error fetching ECs:", ecsError);
-        // Continue with partial data
-      }
+      // Get additional relationship data
+      const uesData = await getAllUEs();
+      const semestresData = await getAllSemestres();
+      const niveauxData = await getAllNiveaux();
+      const filieresData = await getAllFilieres();
       
-      // Map to create full declaration objects
-      const profilesMap = Array.isArray(profiles) ? 
-        new Map(
-          profiles.map(p => [p.id, { prenom: p.prenom, nom: p.nom }])
-        ) : new Map();
+      // Create maps for efficient lookups
+      const profilesMap = new Map(
+        Array.isArray(profiles) 
+          ? profiles.map(p => [p.id, { prenom: p.prenom, nom: p.nom }])
+          : []
+      );
       
       const deptsMap = new Map(
-        (depts || []).map(d => [d.id, d.nom])
+        deptsData.map(d => [d.id, d.nom])
       );
       
       const ecsMap = new Map(
-        (ecs || []).map(e => [e.id, e.nom_ec])
+        ecsData.map(e => [e.id, e.nom_ec])
+      );
+      
+      const uesMap = new Map(
+        uesData.map(ue => [ue.id, { nom: ue.nom, semestre_id: ue.semestre_id }])
+      );
+      
+      const semestresMap = new Map(
+        semestresData.map(s => [s.id, { nom: s.nom, niveau_id: s.niveau_id }])
+      );
+      
+      const niveauxMap = new Map(
+        niveauxData.map(n => [n.id, { nom: n.nom, filiere_id: n.filiere_id }])
+      );
+      
+      const filieresMap = new Map(
+        filieresData.map(f => [f.id, { nom: f.nom, departement_id: f.departement_id }])
       );
       
       const mappedDeclarations: Declaration[] = rawDeclarations.map(fiche => {
