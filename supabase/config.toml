@@ -1,8 +1,5 @@
 
-# This file is used to configure Supabase Edge Functions
-
 project_id = "gpxxuznyigvlndvzctzh"
 
 [functions.send-notification]
 verify_jwt = true
-

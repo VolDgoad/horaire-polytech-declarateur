@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Declaration, Notification, NotificationType, User } from '@/types';
+import { Declaration, Notification, NotificationType } from '@/types';
 import { EmailTemplate, emailTemplates } from '@/types/declaration';
 import { toast } from '@/components/ui/sonner';
 
@@ -82,16 +82,21 @@ export const sendDeclarationNotification = async (
   });
 };
 
-// Create a SQL function in supabase to handle notifications table operations safely
+// Fetch user notifications using our custom RPC function
 export const fetchUserNotifications = async (userEmail: string): Promise<Notification[]> => {
   try {
-    // Use a custom RPC function to fetch notifications securely
+    // Use the custom RPC function we created
     const { data, error } = await supabase.rpc('get_user_notifications', { 
       user_email_param: userEmail 
     });
 
     if (error) {
       console.error('Error fetching notifications:', error);
+      return [];
+    }
+
+    if (!data || !Array.isArray(data)) {
+      console.error('Invalid data format for notifications:', data);
       return [];
     }
 
@@ -114,8 +119,8 @@ export const fetchUserNotifications = async (userEmail: string): Promise<Notific
 
 export const markNotificationAsRead = async (notificationId: string): Promise<boolean> => {
   try {
-    // Use a custom RPC function to update notifications securely
-    const { error } = await supabase.rpc('mark_notification_read', { 
+    // Use the custom RPC function we created
+    const { data, error } = await supabase.rpc('mark_notification_read', { 
       notification_id_param: notificationId 
     });
 
@@ -124,7 +129,7 @@ export const markNotificationAsRead = async (notificationId: string): Promise<bo
       return false;
     }
 
-    return true;
+    return data === true;
   } catch (error) {
     console.error('Error marking notification as read:', error);
     return false;
@@ -133,8 +138,8 @@ export const markNotificationAsRead = async (notificationId: string): Promise<bo
 
 export const deleteNotification = async (notificationId: string): Promise<boolean> => {
   try {
-    // Use a custom RPC function to delete notifications securely
-    const { error } = await supabase.rpc('delete_notification', { 
+    // Use the custom RPC function we created
+    const { data, error } = await supabase.rpc('delete_notification', { 
       notification_id_param: notificationId 
     });
 
@@ -143,7 +148,7 @@ export const deleteNotification = async (notificationId: string): Promise<boolea
       return false;
     }
 
-    return true;
+    return data === true;
   } catch (error) {
     console.error('Error deleting notification:', error);
     return false;

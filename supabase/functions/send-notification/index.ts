@@ -1,92 +1,108 @@
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.0";
+// Follow this setup guide to integrate the Deno runtime into your project:
+// https://deno.land/manual/getting_started/setup_your_environment
+// This enables autocomplete, go to definition, etc.
 
-// CORS headers for browser requests
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0"
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+interface EmailRequest {
+  recipientEmail: string
+  subject: string
+  message: string
+  declarationId?: string
+  status?: string
+  declarationType?: string
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
   }
   
   try {
-    // Extract the request body
-    const { recipientEmail, subject, message, declarationId, status, declarationType } = await req.json();
+    // Create a Supabase client with the Auth context of the function
+    const supabaseClient = createClient(
+      // Supabase API URL - env var exported by default.
+      Deno.env.get('SUPABASE_URL') ?? '',
+      // Supabase API ANON KEY - env var exported by default.
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      // Create client with Auth context of the user that called the function.
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    )
     
-    // Validate required parameters
-    if (!recipientEmail || !subject || !message) {
+    // Get request body
+    const requestData: EmailRequest = await req.json()
+    
+    // Validate request data
+    if (!requestData.recipientEmail || !requestData.subject || !requestData.message) {
       return new Response(
-        JSON.stringify({ error: "Missing required parameters" }),
+        JSON.stringify({ error: 'Missing required fields' }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
-      );
+      )
     }
-
-    // For now, we'll simulate sending an email by logging it
-    // In production, you would use a real email service like SendGrid, Resend, or AWS SES
-    console.log(`Sending email to: ${recipientEmail}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Message: ${message}`);
-    console.log(`Declaration ID: ${declarationId}`);
-    console.log(`Status: ${status}`);
     
-    // Update the declaration status in the database if provided
-    if (declarationId && status) {
-      // Create a Supabase client
-      const supabaseClient = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-      );
-
-      // Update the declaration status
-      const { error } = await supabaseClient
-        .from("fiches")
-        .update({ 
-          statut: status,
-          date_modification: new Date().toISOString()
-        })
-        .eq("id", declarationId);
-        
-      if (error) {
-        throw new Error(`Failed to update declaration status: ${error.message}`);
-      }
-      
-      // Record the notification in the database
-      await supabaseClient
-        .from("notifications")
-        .insert({
-          user_email: recipientEmail, 
-          title: subject,
-          message: message,
-          fiche_id: declarationId,
-          type: declarationType || "info"
-        });
+    // In a real implementation, you would use a service like SendGrid, AWS SES, or Resend
+    // to actually send the email. For now, we'll just log and create a notification record.
+    console.log(`Would send email to ${requestData.recipientEmail}:`)
+    console.log(`Subject: ${requestData.subject}`)
+    console.log(`Message: ${requestData.message}`)
+    
+    // Create a notification in the database
+    const { data, error } = await supabaseClient
+      .from('notifications')
+      .insert({
+        user_email: requestData.recipientEmail,
+        title: requestData.subject,
+        message: requestData.message,
+        type: requestData.declarationType || 'info',
+        fiche_id: requestData.declarationId
+      })
+    
+    if (error) {
+      console.error('Error creating notification:', error)
+      return new Response(
+        JSON.stringify({ error: 'Failed to create notification' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
-
-    // Return a success response
+    
+    // Return success response
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Notification sent and recorded successfully'
+      }),
       {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    );
+    )
+    
   } catch (error) {
-    // Return an error response
-    console.error("Error sending notification:", error);
+    console.error('Error processing request:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal Server Error' }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    );
+    )
   }
-});
+})

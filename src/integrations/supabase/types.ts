@@ -248,6 +248,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          fiche_id: string | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string | null
+          user_email: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          fiche_id?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type?: string | null
+          user_email: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          fiche_id?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string | null
+          user_email?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -373,6 +409,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_notification: {
+        Args: { notification_id_param: string }
+        Returns: boolean
+      }
       get_all_departments: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -494,9 +534,27 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_user_notifications: {
+        Args: { user_email_param: string }
+        Returns: {
+          created_at: string | null
+          fiche_id: string | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string | null
+          user_email: string
+          user_id: string | null
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      mark_notification_read: {
+        Args: { notification_id_param: string }
+        Returns: boolean
       }
     }
     Enums: {
