@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDeclarations } from '@/context/DeclarationContext';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { InfoCircled } from '@radix-ui/react-icons';
+import { InfoIcon } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -292,7 +293,7 @@ export function DeclarationForm({ existingDeclarationId }: DeclarationFormProps)
       <CardContent>
         {isUserDeptHead && !existingDeclarationId && (
           <Alert className="mb-6 bg-blue-50">
-            <InfoCircled className="h-4 w-4" />
+            <InfoIcon className="h-4 w-4" />
             <AlertTitle>Information</AlertTitle>
             <AlertDescription>
               Comme vous êtes Chef de département et que vous déclarez des heures dans votre propre département,

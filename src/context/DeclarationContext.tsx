@@ -14,7 +14,7 @@ import {
   getAllFilieres 
 } from '@/integrations/supabase/client';
 import { sendDeclarationNotification } from '@/services/notificationService';
-import { workflowRules } from '@/types/declaration';
+import { workflowRules, emailTemplates } from '@/types/declaration';
 
 interface DeclarationContextType {
   declarations: Declaration[];

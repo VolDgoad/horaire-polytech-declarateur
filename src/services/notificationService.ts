@@ -82,13 +82,13 @@ export const sendDeclarationNotification = async (
   });
 };
 
+// Create a SQL function in supabase to handle notifications table operations safely
 export const fetchUserNotifications = async (userEmail: string): Promise<Notification[]> => {
   try {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_email', userEmail)
-      .order('created_at', { ascending: false });
+    // Use a custom RPC function to fetch notifications securely
+    const { data, error } = await supabase.rpc('get_user_notifications', { 
+      user_email_param: userEmail 
+    });
 
     if (error) {
       console.error('Error fetching notifications:', error);
@@ -114,10 +114,10 @@ export const fetchUserNotifications = async (userEmail: string): Promise<Notific
 
 export const markNotificationAsRead = async (notificationId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', notificationId);
+    // Use a custom RPC function to update notifications securely
+    const { error } = await supabase.rpc('mark_notification_read', { 
+      notification_id_param: notificationId 
+    });
 
     if (error) {
       console.error('Error marking notification as read:', error);
@@ -133,10 +133,10 @@ export const markNotificationAsRead = async (notificationId: string): Promise<bo
 
 export const deleteNotification = async (notificationId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .delete()
-      .eq('id', notificationId);
+    // Use a custom RPC function to delete notifications securely
+    const { error } = await supabase.rpc('delete_notification', { 
+      notification_id_param: notificationId 
+    });
 
     if (error) {
       console.error('Error deleting notification:', error);

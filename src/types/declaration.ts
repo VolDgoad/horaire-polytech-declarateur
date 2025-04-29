@@ -1,6 +1,7 @@
 
 // Declaration types and workflow related types
 import { DeclarationStatus, UserRole } from './index';
+import type { Declaration } from './index';
 
 export interface WorkflowRule {
   role: UserRole;

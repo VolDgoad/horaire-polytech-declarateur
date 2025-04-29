@@ -15,7 +15,7 @@ import { NotificationCenter } from "@/components/notifications/NotificationCente
 
 export function MainNav() {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
@@ -26,7 +26,7 @@ export function MainNav() {
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
-            <Link to="/" legacyBehavior passHref>
+            <Link to="/">
               <NavigationMenuLink
                 className={navigationMenuTriggerStyle()}
                 active={isActive("/")}
@@ -38,7 +38,7 @@ export function MainNav() {
           {user && (
             <>
               <NavigationMenuItem>
-                <Link to="/declarations" legacyBehavior passHref>
+                <Link to="/declarations">
                   <NavigationMenuLink
                     className={navigationMenuTriggerStyle()}
                     active={isActive("/declarations")}
@@ -51,7 +51,7 @@ export function MainNav() {
                 user.role === 'Chef de département' || 
                 user.role === 'Directrice des études') && (
                 <NavigationMenuItem>
-                  <Link to="/validations" legacyBehavior passHref>
+                  <Link to="/validations">
                     <NavigationMenuLink
                       className={navigationMenuTriggerStyle()}
                       active={isActive("/validations")}
@@ -69,7 +69,7 @@ export function MainNav() {
         {user && <NotificationCenter />}
         <ModeToggle />
         {user ? (
-          <Button variant="outline" size="sm" onClick={signOut}>
+          <Button variant="outline" size="sm" onClick={logout}>
             Déconnexion
           </Button>
         ) : (
