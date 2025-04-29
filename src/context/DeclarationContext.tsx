@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Declaration, DeclarationStatus, Stats, Department, Course } from '@/types';
 import { useAuth } from './AuthContext';
@@ -107,25 +106,31 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
         const department = deptsMap.get(fiche.departement_id) || 'Département inconnu';
         const course = ecsMap.get(fiche.ec_id) || 'Cours inconnu';
         
+        // Calculate total hours with fallbacks to 0
+        const hoursCM = fiche.hours_cm ? Number(fiche.hours_cm) : 0;
+        const hoursTD = fiche.hours_td ? Number(fiche.hours_td) : 0;
+        const hoursTP = fiche.hours_tp ? Number(fiche.hours_tp) : 0;
+        const totalHours = hoursCM + hoursTD + hoursTP;
+
         return {
-          id: fiche.id,
-          userId: fiche.utilisateur_id,
+          id: String(fiche.id),
+          userId: String(fiche.utilisateur_id),
           userName: userName,
-          department: department,
-          course: course,
-          date: fiche.date,
-          hoursCM: fiche.hours_cm,
-          hoursTD: fiche.hours_td,
-          hoursTP: fiche.hours_tp,
-          hours: (fiche.hours_cm || 0) + (fiche.hours_td || 0) + (fiche.hours_tp || 0),
-          status: fiche.statut,
+          department: String(department),
+          course: String(course),
+          date: String(fiche.date),
+          hoursCM: hoursCM,
+          hoursTD: hoursTD,
+          hoursTP: hoursTP,
+          hours: totalHours,
+          status: fiche.statut as DeclarationStatus,
           verifiedBy: fiche.date_validation ? 'Vérifié' : undefined,
           approvedBy: fiche.date_approbation_finale ? 'Approuvé' : undefined,
           validatedBy: fiche.date_validation ? 'Validé' : undefined,
           rejectedBy: fiche.date_rejet ? 'Rejeté' : undefined,
-          rejectionReason: fiche.etat_paiement,
-          createdAt: fiche.date_creation,
-          updatedAt: fiche.date_modification
+          rejectionReason: fiche.etat_paiement ? String(fiche.etat_paiement) : undefined,
+          createdAt: String(fiche.date_creation),
+          updatedAt: String(fiche.date_modification)
         };
       });
 
