@@ -22,7 +22,8 @@ export function DeclarationForm() {
   const { createDeclaration, departments, courses } = useDeclarations();
   const navigate = useNavigate();
   
-  const [department, setDepartment] = useState(user?.department || '');
+  // Enlever l'initialisation avec le département de l'utilisateur pour permettre la sélection libre
+  const [department, setDepartment] = useState('');
   const [course, setCourse] = useState('');
   const [date, setDate] = useState('');
   const [hoursCM, setHoursCM] = useState<number | undefined>(undefined);
@@ -31,6 +32,7 @@ export function DeclarationForm() {
   const [notes, setNotes] = useState('');
   const [isDraft, setIsDraft] = useState(true);
 
+  // Filtrer les cours par département sélectionné
   const departmentCourses = courses.filter(c => c.departmentId === departments.find(d => d.name === department)?.id);
 
   // Calculate total hours
@@ -84,7 +86,7 @@ export function DeclarationForm() {
       <CardHeader>
         <CardTitle>Nouvelle déclaration d'heures</CardTitle>
         <CardDescription>
-          Déclarez vos heures d'enseignement pour le traitement et la validation
+          Déclarez vos heures d'enseignement dans n'importe quel département
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -44,7 +44,8 @@ export function SideNav() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             
-            {user.role === 'Enseignant' && (
+            {/* Permettre aux enseignants, chefs de département et directrice de déclarer des heures */}
+            {['Enseignant', 'Chef de département', 'Directrice des études'].includes(user.role) && (
               <>
                 <SidebarMenuItem className={isActive('/declarations/new') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
                   <SidebarMenuButton asChild>

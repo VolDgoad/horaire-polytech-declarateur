@@ -11,6 +11,9 @@ export default function NewDeclarationPage() {
           <p className="text-muted-foreground mt-1">
             Déclarez vos heures d'enseignement pour le traitement et la validation
           </p>
+          <p className="text-muted-foreground mt-1">
+            Vous pouvez déclarer des heures dans n'importe quel département
+          </p>
         </div>
         
         <DeclarationForm />

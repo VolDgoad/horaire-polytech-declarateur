@@ -58,10 +58,11 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Mise à jour du TeacherRoute pour autoriser aussi les chefs de département et la directrice
 const TeacherRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   
-  if (user?.role !== 'Enseignant') {
+  if (!['Enseignant', 'Chef de département', 'Directrice des études'].includes(user?.role || '')) {
     return <Navigate to="/dashboard" replace />;
   }
   
