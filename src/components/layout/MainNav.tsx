@@ -1,69 +1,84 @@
 
-import { useAuth } from '@/context/AuthContext';
-import { Bell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import * as React from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import { ModeToggle } from "./ModeToggle";
+import { Button } from "../ui/button";
+import { useAuth } from "@/context/AuthContext";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 export function MainNav() {
-  const { user } = useAuth();
+  const location = useLocation();
+  const { user, signOut } = useAuth();
+
+  const isActive = (path: string) => {
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <div className="border-b">
-      <div className="flex h-16 items-center px-4 md:px-6">
-        <div className="ml-auto flex items-center space-x-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-polytech-orange"></span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuGroup>
-                <div className="p-2">
-                  <h3 className="font-medium text-sm mb-1">Notifications</h3>
-                  <p className="text-xs text-muted-foreground">Vos alertes récentes</p>
-                </div>
-                <DropdownMenuItem className="p-3 cursor-pointer">
-                  <div>
-                    <p className="text-sm font-medium">Nouvelle déclaration à vérifier</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Dr. Amadou Diop a soumis une nouvelle déclaration
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Il y a 1 heure</p>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="p-3 cursor-pointer">
-                  <div>
-                    <p className="text-sm font-medium">Déclaration approuvée</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Votre déclaration du 18 avril a été approuvée
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Il y a 3 heures</p>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="p-3 cursor-pointer">
-                  <div>
-                    <p className="text-sm font-medium">Limite de quota atteinte</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Vous avez atteint 80% de votre quota annuel
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Il y a 1 jour</p>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <span className="text-sm font-medium">
-            {user?.name}
-          </span>
-        </div>
+    <div className="flex justify-between items-center">
+      <NavigationMenu>
+        <NavigationMenuList>
+          <NavigationMenuItem>
+            <Link to="/" legacyBehavior passHref>
+              <NavigationMenuLink
+                className={navigationMenuTriggerStyle()}
+                active={isActive("/")}
+              >
+                Accueil
+              </NavigationMenuLink>
+            </Link>
+          </NavigationMenuItem>
+          {user && (
+            <>
+              <NavigationMenuItem>
+                <Link to="/declarations" legacyBehavior passHref>
+                  <NavigationMenuLink
+                    className={navigationMenuTriggerStyle()}
+                    active={isActive("/declarations")}
+                  >
+                    Déclarations
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              {(user.role === 'Scolarité' || 
+                user.role === 'Chef de département' || 
+                user.role === 'Directrice des études') && (
+                <NavigationMenuItem>
+                  <Link to="/validations" legacyBehavior passHref>
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                      active={isActive("/validations")}
+                    >
+                      À Traiter
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+              )}
+            </>
+          )}
+        </NavigationMenuList>
+      </NavigationMenu>
+      <div className="flex items-center gap-2">
+        {user && <NotificationCenter />}
+        <ModeToggle />
+        {user ? (
+          <Button variant="outline" size="sm" onClick={signOut}>
+            Déconnexion
+          </Button>
+        ) : (
+          <Link to="/login">
+            <Button variant="default" size="sm">
+              Connexion
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );

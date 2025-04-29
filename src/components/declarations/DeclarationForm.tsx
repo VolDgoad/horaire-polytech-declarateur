@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDeclarations } from '@/context/DeclarationContext';
@@ -7,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { InfoCircled } from '@radix-ui/react-icons';
 import {
   Select,
   SelectContent,
@@ -17,11 +17,18 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/sonner';
 import { Department, Filiere, Niveau, Semestre, UE, EC } from '@/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-export function DeclarationForm() {
+interface DeclarationFormProps {
+  existingDeclarationId?: string;
+}
+
+export function DeclarationForm({ existingDeclarationId }: DeclarationFormProps) {
   const { user } = useAuth();
   const { 
     createDeclaration, 
+    updateDeclaration,
+    getDeclarationById,
     departments,
     filieres,
     niveaux,
@@ -55,7 +62,73 @@ export function DeclarationForm() {
   const [hoursTD, setHoursTD] = useState<number | undefined>(undefined);
   const [hoursTP, setHoursTP] = useState<number | undefined>(undefined);
   const [notes, setNotes] = useState('');
-  const [isDraft, setIsDraft] = useState(true);
+  
+  // Load existing declaration if editing
+  useEffect(() => {
+    if (existingDeclarationId) {
+      const declaration = getDeclarationById(existingDeclarationId);
+      if (declaration) {
+        // Set department
+        const dept = departments.find(d => d.id === declaration.departmentId);
+        if (dept) {
+          setDepartment(dept.name);
+          setDepartmentId(dept.id);
+        }
+        
+        // Set filiere if available
+        if (declaration.filiereId) {
+          const fil = filieres.find(f => f.id === declaration.filiereId);
+          if (fil) {
+            setFiliere(fil.name);
+            setFiliereId(fil.id);
+          }
+        }
+        
+        // Set niveau if available
+        if (declaration.niveauId) {
+          const niv = niveaux.find(n => n.id === declaration.niveauId);
+          if (niv) {
+            setNiveau(niv.name);
+            setNiveauId(niv.id);
+          }
+        }
+        
+        // Set semestre if available
+        if (declaration.semestreId) {
+          const sem = semestres.find(s => s.id === declaration.semestreId);
+          if (sem) {
+            setSemestre(sem.name);
+            setSemestreId(sem.id);
+          }
+        }
+        
+        // Set UE if available
+        if (declaration.ueId) {
+          const u = ues.find(u => u.id === declaration.ueId);
+          if (u) {
+            setUe(u.name);
+            setUeId(u.id);
+          }
+        }
+        
+        // Set EC if available
+        if (declaration.ecId) {
+          const e = ecs.find(e => e.id === declaration.ecId);
+          if (e) {
+            setEc(e.name);
+            setEcId(e.id);
+          }
+        }
+        
+        // Set other fields
+        setDate(declaration.date);
+        setHoursCM(declaration.hoursCM);
+        setHoursTD(declaration.hoursTD);
+        setHoursTP(declaration.hoursTP);
+        setNotes(declaration.notes || '');
+      }
+    }
+  }, [existingDeclarationId, getDeclarationById, departments, filieres, niveaux, semestres, ues, ecs]);
 
   // Filtered lists based on selection
   const departmentFilieres = filieres.filter(f => f.departmentId === departmentId);
@@ -150,7 +223,10 @@ export function DeclarationForm() {
   // Calculate total hours
   const totalHours = (hoursCM || 0) + (hoursTD || 0) + (hoursTP || 0);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if current user is department head for the selected department
+  const isUserDeptHead = user?.role === 'Chef de département' && user?.department === department;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!department || !ec || !date || totalHours <= 0) {
@@ -164,7 +240,7 @@ export function DeclarationForm() {
     }
     
     try {
-      createDeclaration({
+      const declarationData = {
         department,
         course: ec,
         date,
@@ -179,37 +255,54 @@ export function DeclarationForm() {
         semestreId,
         ueId,
         ecId
-      });
-      
-      if (!isDraft) {
-        toast.success('Déclaration soumise avec succès');
+      };
+
+      if (existingDeclarationId) {
+        // Update existing declaration
+        await updateDeclaration(existingDeclarationId, declarationData);
+        toast.success('Déclaration mise à jour avec succès');
+      } else {
+        // Create new declaration
+        await createDeclaration(declarationData);
+        
+        if (isUserDeptHead) {
+          toast.success('Déclaration créée et automatiquement vérifiée. En attente d\'approbation finale.');
+        } else {
+          toast.success('Déclaration soumise avec succès');
+        }
       }
       
       navigate('/declarations');
     } catch (error) {
-      toast.error('Une erreur est survenue lors de la création de la déclaration');
+      toast.error('Une erreur est survenue');
+      console.error(error);
     }
-  };
-
-  const handleSaveAsDraft = () => {
-    setIsDraft(true);
-  };
-
-  const handleSubmitDeclaration = () => {
-    setIsDraft(false);
   };
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Nouvelle déclaration d'heures</CardTitle>
+        <CardTitle>{existingDeclarationId ? 'Modifier la déclaration' : 'Nouvelle déclaration d\'heures'}</CardTitle>
         <CardDescription>
-          Déclarez vos heures d'enseignement dans n'importe quel département
+          {existingDeclarationId 
+            ? 'Modifiez les détails de votre déclaration d\'heures' 
+            : 'Déclarez vos heures d\'enseignement dans n\'importe quel département'}
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {isUserDeptHead && !existingDeclarationId && (
+          <Alert className="mb-6 bg-blue-50">
+            <InfoCircled className="h-4 w-4" />
+            <AlertTitle>Information</AlertTitle>
+            <AlertDescription>
+              Comme vous êtes Chef de département et que vous déclarez des heures dans votre propre département,
+              votre déclaration sera automatiquement vérifiée et transmise à la Directrice des études pour approbation finale.
+            </AlertDescription>
+          </Alert>
+        )}
         <form id="declaration-form" onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
+            {/* Department selection */}
             <div>
               <Label htmlFor="department">Département</Label>
               <Select 
@@ -229,6 +322,7 @@ export function DeclarationForm() {
               </Select>
             </div>
             
+            {/* Hierarchical selections */}
             <div>
               <Label htmlFor="filiere">Filière</Label>
               <Select 
@@ -403,18 +497,15 @@ export function DeclarationForm() {
       <CardFooter className="flex justify-between">
         <Button 
           variant="outline" 
-          onClick={handleSaveAsDraft}
-          type="submit"
-          form="declaration-form"
+          onClick={() => navigate('/declarations')}
         >
-          Enregistrer comme brouillon
+          Annuler
         </Button>
         <Button 
-          onClick={handleSubmitDeclaration}
           type="submit"
           form="declaration-form"
         >
-          Soumettre
+          {existingDeclarationId ? 'Mettre à jour' : 'Soumettre'}
         </Button>
       </CardFooter>
     </Card>

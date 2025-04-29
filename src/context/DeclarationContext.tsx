@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Declaration, DeclarationStatus, Stats, Department, Course, Filiere, Niveau, Semestre, UE, EC } from '@/types';
+import { Declaration, DeclarationStatus, Stats, Department, Course, Filiere, Niveau, Semestre, UE, EC, User } from '@/types';
 import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { 
@@ -13,6 +13,8 @@ import {
   getAllNiveaux,
   getAllFilieres 
 } from '@/integrations/supabase/client';
+import { sendDeclarationNotification } from '@/services/notificationService';
+import { workflowRules } from '@/types/declaration';
 
 interface DeclarationContextType {
   declarations: Declaration[];
@@ -25,12 +27,17 @@ interface DeclarationContextType {
   ecs: EC[];
   userDeclarations: Declaration[];
   pendingDeclarations: Declaration[];
-  createDeclaration: (declaration: Omit<Declaration, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'userName' | 'status'>) => void;
-  updateDeclaration: (id: string, updates: Partial<Declaration>) => void;
-  deleteDeclaration: (id: string) => void;
-  updateStatus: (id: string, status: DeclarationStatus, reason?: string) => void;
+  createDeclaration: (declaration: Omit<Declaration, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'userName' | 'status'>) => Promise<string | undefined>;
+  updateDeclaration: (id: string, updates: Partial<Declaration>) => Promise<boolean>;
+  deleteDeclaration: (id: string) => Promise<boolean>;
+  updateStatus: (id: string, status: DeclarationStatus, reason?: string) => Promise<boolean>;
   getDeclarationById: (id: string) => Declaration | undefined;
   getUserStats: () => Stats;
+  canUserProcessDeclaration: (declaration: Declaration) => boolean;
+  getNextStatus: (declaration: Declaration) => DeclarationStatus | undefined;
+  getRejectStatus: (declaration: Declaration) => DeclarationStatus | undefined;
+  refreshDeclarations: () => Promise<void>;
+  isDeclarationAutoProcessed: (declaration: Declaration, userDept?: string) => boolean;
 }
 
 const DeclarationContext = createContext<DeclarationContextType | undefined>(undefined);
@@ -87,7 +94,7 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       // Create maps for efficient lookups
       const profilesMap = new Map(
         Array.isArray(profiles) 
-          ? profiles.map(p => [p.id, { prenom: p.prenom, nom: p.nom }])
+          ? profiles.map(p => [p.id, { prenom: p.prenom, nom: p.nom, email: p.email }])
           : []
       );
       
@@ -160,6 +167,11 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching declarations:', error);
       toast.error('Erreur lors de la récupération des déclarations');
     }
+  };
+  
+  // Function to refresh declarations
+  const refreshDeclarations = async (): Promise<void> => {
+    await fetchDeclarations();
   };
 
   const fetchDepartments = async () => {
@@ -302,6 +314,77 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
   const userDeclarations = user ? declarations.filter(d => d.userId === user.id) : [];
 
+  // Determine if a user can process a declaration based on their role and the declaration status
+  const canUserProcessDeclaration = (declaration: Declaration): boolean => {
+    if (!user) return false;
+
+    // Admin can process any declaration
+    if (user.role === 'Admin') return true;
+
+    // Directrice des études can process approved declarations
+    if (user.role === 'Directrice des études' && declaration.status === 'approuvee') return true;
+    
+    // Scolarité can process pending declarations
+    if (user.role === 'Scolarité' && declaration.status === 'en_attente') return true;
+    
+    // Chef de département can process verified declarations in their department
+    if (
+      user.role === 'Chef de département' && 
+      declaration.status === 'verifiee' && 
+      user.department === declaration.department
+    ) return true;
+
+    // Declaration authors can only edit or delete pending or rejected declarations
+    if (
+      declaration.userId === user.id && 
+      ['en_attente', 'refusee'].includes(declaration.status)
+    ) return true;
+
+    return false;
+  };
+
+  // Get the next status in the workflow based on the current status and user role
+  const getNextStatus = (declaration: Declaration): DeclarationStatus | undefined => {
+    if (!user) return undefined;
+
+    const userRole = user.role;
+    
+    for (const ruleName in workflowRules) {
+      const rule = workflowRules[ruleName];
+      if (rule.role === userRole && rule.canProcess(declaration)) {
+        return rule.nextStatus;
+      }
+    }
+
+    return undefined;
+  };
+
+  // Get the rejection status based on the current status and user role
+  const getRejectStatus = (declaration: Declaration): DeclarationStatus | undefined => {
+    if (!user) return undefined;
+
+    const userRole = user.role;
+    
+    for (const ruleName in workflowRules) {
+      const rule = workflowRules[ruleName];
+      if (rule.role === userRole && rule.canProcess(declaration)) {
+        return rule.rejectStatus;
+      }
+    }
+
+    return undefined;
+  };
+
+  // Check if a declaration should be auto-processed based on the rules
+  const isDeclarationAutoProcessed = (declaration: Declaration, userDept?: string): boolean => {
+    // If declaration is submitted by a department head for their own department
+    return (
+      declaration.status === 'en_attente' && 
+      declaration.department === userDept
+    );
+  };
+
+  // Get declarations pending user action based on role
   const pendingDeclarations = user 
     ? declarations.filter(d => {
         if (user.role === 'Scolarité') {
@@ -315,11 +398,21 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       })
     : [];
 
-  const createDeclaration = async (newDeclaration: Omit<Declaration, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'userName' | 'status'>) => {
-    if (!user) return;
+  // Create a new declaration
+  const createDeclaration = async (
+    newDeclaration: Omit<Declaration, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'userName' | 'status'>
+  ): Promise<string | undefined> => {
+    if (!user) return undefined;
     
     try {
-      const { error } = await supabase
+      // Determine if auto-processing applies (if user is department head and declaration is for their department)
+      const isAutoDepartmentHead = user.role === 'Chef de département' && 
+                                 user.department === newDeclaration.department;
+      
+      // Set initial status
+      const initialStatus: DeclarationStatus = isAutoDepartmentHead ? 'verifiee' : 'en_attente';
+      
+      const { data, error } = await supabase
         .from('fiches')
         .insert({
           utilisateur_id: user.id,
@@ -333,20 +426,116 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
           hours_cm: newDeclaration.hoursCM,
           hours_td: newDeclaration.hoursTD,
           hours_tp: newDeclaration.hoursTP,
-          statut: 'en_attente'
-        });
+          statut: initialStatus,
+          // If auto-processed, set verification date
+          date_validation: isAutoDepartmentHead ? new Date().toISOString() : null
+        })
+        .select();
 
       if (error) throw error;
       
-      fetchDeclarations(); // Refresh declarations list
+      if (!data || data.length === 0) {
+        throw new Error('No data returned after insert');
+      }
+      
+      const newDeclarationData = data[0];
+      
+      // Fetch the department name for the notification
+      const departmentName = departments.find(d => d.id === newDeclaration.departmentId)?.name || '';
+      const ecName = ecs.find(e => e.id === newDeclaration.ecId)?.name || '';
+      
+      // Get profiles to fetch admin emails
+      const admins = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('role', 'Scolarité');
+      
+      // Send confirmation to the user
+      await sendDeclarationNotification(
+        'declarationSubmitted',
+        {
+          ...newDeclaration,
+          id: newDeclarationData.id,
+          userId: user.id,
+          userName: user.name,
+          status: initialStatus,
+          department: departmentName,
+          course: ecName,
+          createdAt: newDeclarationData.date_creation,
+          updatedAt: newDeclarationData.date_modification
+        },
+        user.email,
+        {},
+        undefined,
+        'success'
+      );
+      
+      // If auto-processed as department head, also notify the directrice
+      if (isAutoDepartmentHead) {
+        const directrice = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('role', 'Directrice des études');
+          
+        if (directrice.data && directrice.data.length > 0) {
+          await sendDeclarationNotification(
+            'pendingApproval',
+            {
+              ...newDeclaration,
+              id: newDeclarationData.id,
+              userId: user.id,
+              userName: user.name,
+              status: initialStatus,
+              department: departmentName,
+              course: ecName,
+              createdAt: newDeclarationData.date_creation,
+              updatedAt: newDeclarationData.date_modification
+            },
+            directrice.data[0].email,
+            {},
+            undefined,
+            'info'
+          );
+        }
+      } else {
+        // Notify scolarité about a new declaration that needs verification
+        if (admins.data && admins.data.length > 0) {
+          for (const admin of admins.data) {
+            await sendDeclarationNotification(
+              'pendingVerification',
+              {
+                ...newDeclaration,
+                id: newDeclarationData.id,
+                userId: user.id,
+                userName: user.name,
+                status: initialStatus,
+                department: departmentName,
+                course: ecName,
+                createdAt: newDeclarationData.date_creation,
+                updatedAt: newDeclarationData.date_modification
+              },
+              admin.email,
+              {},
+              undefined,
+              'info'
+            );
+          }
+        }
+      }
+      
+      await fetchDeclarations(); // Refresh declarations list
       toast.success('Déclaration créée avec succès');
+      
+      return newDeclarationData.id;
     } catch (error) {
       console.error('Error creating declaration:', error);
       toast.error('Erreur lors de la création de la déclaration');
+      return undefined;
     }
   };
 
-  const updateDeclaration = async (id: string, updates: Partial<Declaration>) => {
+  // Update an existing declaration
+  const updateDeclaration = async (id: string, updates: Partial<Declaration>): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('fiches')
@@ -366,23 +555,35 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       
-      fetchDeclarations(); // Refresh declarations list
+      await fetchDeclarations(); // Refresh declarations list
       toast.success('Déclaration mise à jour');
+      return true;
     } catch (error) {
       console.error('Error updating declaration:', error);
       toast.error('Erreur lors de la mise à jour de la déclaration');
+      return false;
     }
   };
 
-  const updateStatus = async (id: string, status: DeclarationStatus, reason?: string) => {
-    if (!user) return;
+  // Update the status of a declaration
+  const updateStatus = async (id: string, status: DeclarationStatus, reason?: string): Promise<boolean> => {
+    if (!user) return false;
     
     try {
+      // Get the current declaration
+      const declaration = declarations.find(d => d.id === id);
+      if (!declaration) {
+        toast.error('Déclaration introuvable');
+        return false;
+      }
+      
+      // Prepare the updates
       const updates: any = {
         statut: status,
         date_modification: new Date().toISOString()
       };
 
+      // Set appropriate date fields and rejection reason based on status
       if (status === 'verifiee') {
         updates.date_validation = new Date().toISOString();
       } else if (status === 'approuvee') {
@@ -391,9 +592,10 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
         updates.date_validation = new Date().toISOString();
       } else if (status === 'refusee') {
         updates.date_rejet = new Date().toISOString();
-        updates.etat_paiement = reason;
+        updates.etat_paiement = reason || 'Refusé sans motif spécifié';
       }
 
+      // Update the database
       const { error } = await supabase
         .from('fiches')
         .update(updates)
@@ -401,7 +603,131 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       
-      fetchDeclarations(); // Refresh declarations list
+      // Fetch the updated declaration to get fresh data
+      await fetchDeclarations();
+      
+      // Get the declaration author's email
+      const authorProfile = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', declaration.userId)
+        .single();
+      
+      const authorEmail = authorProfile.data?.email;
+      
+      if (!authorEmail) {
+        console.error('Could not find author email');
+        return false;
+      }
+      
+      // Send email notifications based on status change
+      if (status === 'verifiee') {
+        // Notify author
+        await sendDeclarationNotification(
+          'declarationVerified',
+          declaration,
+          authorEmail,
+          { rejectionReason: reason || '' },
+          undefined,
+          'success'
+        );
+        
+        // Notify department head
+        const departmentHeads = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('role', 'Chef de département')
+          .eq('departement_id', parseInt(declaration.departmentId || '0'));
+        
+        if (departmentHeads.data && departmentHeads.data.length > 0) {
+          for (const head of departmentHeads.data) {
+            await sendDeclarationNotification(
+              'pendingValidation',
+              declaration,
+              head.email,
+              {},
+              undefined,
+              'info'
+            );
+          }
+        }
+      } else if (status === 'approuvee') {
+        // Notify author
+        await sendDeclarationNotification(
+          'declarationValidated',
+          declaration,
+          authorEmail,
+          { rejectionReason: reason || '' },
+          undefined,
+          'success'
+        );
+        
+        // Notify directrice
+        const directrice = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('role', 'Directrice des études');
+          
+        if (directrice.data && directrice.data.length > 0) {
+          await sendDeclarationNotification(
+            'pendingApproval',
+            declaration,
+            directrice.data[0].email,
+            {},
+            undefined,
+            'info'
+          );
+        }
+      } else if (status === 'validee') {
+        // Notify author
+        await sendDeclarationNotification(
+          'declarationApproved',
+          declaration,
+          authorEmail,
+          { rejectionReason: reason || '' },
+          undefined,
+          'success'
+        );
+        
+        // Notify department head
+        const departmentHeads = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('role', 'Chef de département')
+          .eq('departement_id', parseInt(declaration.departmentId || '0'));
+        
+        if (departmentHeads.data && departmentHeads.data.length > 0) {
+          for (const head of departmentHeads.data) {
+            await sendDeclarationNotification(
+              'declarationApproved',
+              declaration,
+              head.email,
+              {},
+              undefined,
+              'success'
+            );
+          }
+        }
+      } else if (status === 'refusee') {
+        // Determine who rejected it based on the user role
+        let templateKey = 'declarationRejectedByScolarite';
+        
+        if (user.role === 'Chef de département') {
+          templateKey = 'declarationRejectedByChef';
+        } else if (user.role === 'Directrice des études') {
+          templateKey = 'declarationRejectedByDirectrice';
+        }
+        
+        // Notify author
+        await sendDeclarationNotification(
+          templateKey as keyof typeof emailTemplates,
+          declaration,
+          authorEmail,
+          { rejectionReason: reason || 'Non spécifié' },
+          undefined,
+          'error'
+        );
+      }
       
       const statusMessages = {
         verifiee: 'vérifiée',
@@ -412,13 +738,16 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       };
       
       toast.success(`Déclaration ${statusMessages[status]} avec succès`);
+      return true;
     } catch (error) {
       console.error('Error updating declaration status:', error);
       toast.error('Erreur lors de la mise à jour du statut');
+      return false;
     }
   };
 
-  const deleteDeclaration = async (id: string) => {
+  // Delete a declaration
+  const deleteDeclaration = async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('fiches')
@@ -427,18 +756,22 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       
-      fetchDeclarations(); // Refresh declarations list
+      await fetchDeclarations(); // Refresh declarations list
       toast.success('Déclaration supprimée');
+      return true;
     } catch (error) {
       console.error('Error deleting declaration:', error);
       toast.error('Erreur lors de la suppression de la déclaration');
+      return false;
     }
   };
 
+  // Get a declaration by ID
   const getDeclarationById = (id: string) => {
     return declarations.find(d => d.id === id);
   };
 
+  // Calculate user statistics
   const getUserStats = (): Stats => {
     if (!user) {
       return { 
@@ -519,7 +852,12 @@ export function DeclarationProvider({ children }: { children: ReactNode }) {
       deleteDeclaration,
       updateStatus,
       getDeclarationById,
-      getUserStats
+      getUserStats,
+      canUserProcessDeclaration,
+      getNextStatus,
+      getRejectStatus,
+      refreshDeclarations,
+      isDeclarationAutoProcessed
     }}>
       {children}
     </DeclarationContext.Provider>
