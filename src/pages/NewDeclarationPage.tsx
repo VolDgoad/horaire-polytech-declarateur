@@ -12,7 +12,7 @@ export default function NewDeclarationPage() {
             Déclarez vos heures d'enseignement pour le traitement et la validation
           </p>
           <p className="text-muted-foreground mt-1">
-            Vous pouvez déclarer des heures dans n'importe quel département
+            Complétez tous les champs du parcours pédagogique (département, filière, niveau, semestre, UE, EC)
           </p>
         </div>
         

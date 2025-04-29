@@ -83,11 +83,12 @@ export interface Declaration {
   paymentStatus?: string; // Will map to etat_paiement
   createdAt: string;
   updatedAt: string;
-  ueId?: string;       // Reference to UE
-  ecId?: string;       // Reference to EC
-  niveauId?: string;   // Reference to Niveau
-  semestreId?: string; // Reference to Semestre
-  filiereId?: string;  // Reference to Filiere
+  departmentId?: string;  // Reference to Department
+  filiereId?: string;     // Reference to Filiere 
+  niveauId?: string;      // Reference to Niveau
+  semestreId?: string;    // Reference to Semestre
+  ueId?: string;          // Reference to UE
+  ecId?: string;          // Reference to EC
 }
 
 export interface Course {

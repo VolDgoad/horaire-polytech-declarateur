@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDeclarations } from '@/context/DeclarationContext';
 import { useAuth } from '@/context/AuthContext';
@@ -16,15 +16,40 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/sonner';
+import { Department, Filiere, Niveau, Semestre, UE, EC } from '@/types';
 
 export function DeclarationForm() {
   const { user } = useAuth();
-  const { createDeclaration, departments, courses } = useDeclarations();
+  const { 
+    createDeclaration, 
+    departments,
+    filieres,
+    niveaux,
+    semestres,
+    ues,
+    ecs
+  } = useDeclarations();
   const navigate = useNavigate();
   
-  // Enlever l'initialisation avec le département de l'utilisateur pour permettre la sélection libre
+  // Form state
   const [department, setDepartment] = useState('');
-  const [course, setCourse] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  
+  const [filiere, setFiliere] = useState('');
+  const [filiereId, setFiliereId] = useState('');
+  
+  const [niveau, setNiveau] = useState('');
+  const [niveauId, setNiveauId] = useState('');
+  
+  const [semestre, setSemestre] = useState('');
+  const [semestreId, setSemestreId] = useState('');
+  
+  const [ue, setUe] = useState('');
+  const [ueId, setUeId] = useState('');
+  
+  const [ec, setEc] = useState('');
+  const [ecId, setEcId] = useState('');
+  
   const [date, setDate] = useState('');
   const [hoursCM, setHoursCM] = useState<number | undefined>(undefined);
   const [hoursTD, setHoursTD] = useState<number | undefined>(undefined);
@@ -32,8 +57,95 @@ export function DeclarationForm() {
   const [notes, setNotes] = useState('');
   const [isDraft, setIsDraft] = useState(true);
 
-  // Filtrer les cours par département sélectionné
-  const departmentCourses = courses.filter(c => c.departmentId === departments.find(d => d.name === department)?.id);
+  // Filtered lists based on selection
+  const departmentFilieres = filieres.filter(f => f.departmentId === departmentId);
+  const filieresNiveaux = niveaux.filter(n => n.filiereId === filiereId);
+  const niveauxSemestres = semestres.filter(s => s.niveauId === niveauId);
+  const semestresUEs = ues.filter(u => u.semestreId === semestreId);
+  const uesECs = ecs.filter(e => e.ueId === ueId);
+
+  // Reset dependent fields when parent field changes
+  useEffect(() => {
+    if (department) {
+      const dept = departments.find(d => d.name === department);
+      setDepartmentId(dept?.id || '');
+    } else {
+      setDepartmentId('');
+    }
+    setFiliere('');
+    setFiliereId('');
+    setNiveau('');
+    setNiveauId('');
+    setSemestre('');
+    setSemestreId('');
+    setUe('');
+    setUeId('');
+    setEc('');
+    setEcId('');
+  }, [department, departments]);
+
+  useEffect(() => {
+    if (filiere) {
+      const fil = filieres.find(f => f.name === filiere);
+      setFiliereId(fil?.id || '');
+    } else {
+      setFiliereId('');
+    }
+    setNiveau('');
+    setNiveauId('');
+    setSemestre('');
+    setSemestreId('');
+    setUe('');
+    setUeId('');
+    setEc('');
+    setEcId('');
+  }, [filiere, filieres]);
+
+  useEffect(() => {
+    if (niveau) {
+      const niv = niveaux.find(n => n.name === niveau);
+      setNiveauId(niv?.id || '');
+    } else {
+      setNiveauId('');
+    }
+    setSemestre('');
+    setSemestreId('');
+    setUe('');
+    setUeId('');
+    setEc('');
+    setEcId('');
+  }, [niveau, niveaux]);
+
+  useEffect(() => {
+    if (semestre) {
+      const sem = semestres.find(s => s.name === semestre);
+      setSemestreId(sem?.id || '');
+    } else {
+      setSemestreId('');
+    }
+    setUe('');
+    setUeId('');
+    setEc('');
+    setEcId('');
+  }, [semestre, semestres]);
+
+  useEffect(() => {
+    if (ue) {
+      const u = ues.find(u => u.name === ue);
+      setUeId(u?.id || '');
+    } else {
+      setUeId('');
+    }
+    setEc('');
+    setEcId('');
+  }, [ue, ues]);
+
+  useEffect(() => {
+    if (ec) {
+      const e = ecs.find(e => e.name === ec);
+      setEcId(e?.id || '');
+    }
+  }, [ec, ecs]);
 
   // Calculate total hours
   const totalHours = (hoursCM || 0) + (hoursTD || 0) + (hoursTP || 0);
@@ -41,7 +153,7 @@ export function DeclarationForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!department || !course || !date || totalHours <= 0) {
+    if (!department || !ec || !date || totalHours <= 0) {
       toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -54,13 +166,19 @@ export function DeclarationForm() {
     try {
       createDeclaration({
         department,
-        course,
+        course: ec,
         date,
         hoursCM,
         hoursTD,
         hoursTP,
         hours: totalHours,
-        notes
+        notes,
+        departmentId,
+        filiereId,
+        niveauId,
+        semestreId,
+        ueId,
+        ecId
       });
       
       if (!isDraft) {
@@ -112,19 +230,99 @@ export function DeclarationForm() {
             </div>
             
             <div>
-              <Label htmlFor="course">Cours</Label>
+              <Label htmlFor="filiere">Filière</Label>
               <Select 
-                value={course} 
-                onValueChange={setCourse}
+                value={filiere} 
+                onValueChange={setFiliere}
                 disabled={!department}
               >
-                <SelectTrigger id="course">
-                  <SelectValue placeholder="Sélectionner un cours" />
+                <SelectTrigger id="filiere">
+                  <SelectValue placeholder="Sélectionner une filière" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departmentCourses.map((course) => (
-                    <SelectItem key={course.id} value={course.name}>
-                      {course.name}
+                  {departmentFilieres.map((fil) => (
+                    <SelectItem key={fil.id} value={fil.name}>
+                      {fil.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="niveau">Niveau</Label>
+              <Select 
+                value={niveau} 
+                onValueChange={setNiveau}
+                disabled={!filiere}
+              >
+                <SelectTrigger id="niveau">
+                  <SelectValue placeholder="Sélectionner un niveau" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filieresNiveaux.map((niv) => (
+                    <SelectItem key={niv.id} value={niv.name}>
+                      {niv.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="semestre">Semestre</Label>
+              <Select 
+                value={semestre} 
+                onValueChange={setSemestre}
+                disabled={!niveau}
+              >
+                <SelectTrigger id="semestre">
+                  <SelectValue placeholder="Sélectionner un semestre" />
+                </SelectTrigger>
+                <SelectContent>
+                  {niveauxSemestres.map((sem) => (
+                    <SelectItem key={sem.id} value={sem.name}>
+                      {sem.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="ue">UE</Label>
+              <Select 
+                value={ue} 
+                onValueChange={setUe}
+                disabled={!semestre}
+              >
+                <SelectTrigger id="ue">
+                  <SelectValue placeholder="Sélectionner une UE" />
+                </SelectTrigger>
+                <SelectContent>
+                  {semestresUEs.map((u) => (
+                    <SelectItem key={u.id} value={u.name}>
+                      {u.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="ec">EC</Label>
+              <Select 
+                value={ec} 
+                onValueChange={setEc}
+                disabled={!ue}
+              >
+                <SelectTrigger id="ec">
+                  <SelectValue placeholder="Sélectionner un EC" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uesECs.map((e) => (
+                    <SelectItem key={e.id} value={e.name}>
+                      {e.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
