@@ -16,6 +16,16 @@ import ValidationDetailPage from "./pages/ValidationDetailPage";
 import NotFound from "./pages/NotFound";
 import RegisterPage from "./pages/RegisterPage";
 
+// Import des nouvelles pages d'administration
+import AdminPage from "./pages/admin/AdminPage";
+import UsersPage from "./pages/admin/UsersPage";
+import DepartmentsPage from "./pages/admin/DepartmentsPage";
+import FilieresPage from "./pages/admin/FilieresPage";
+import NiveauxPage from "./pages/admin/NiveauxPage";
+import SemestresPage from "./pages/admin/SemestresPage";
+import UEPage from "./pages/admin/UEPage";
+import ECPage from "./pages/admin/ECPage";
+
 const queryClient = new QueryClient();
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -52,6 +62,17 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Route pour l'administrateur (Directrice des études)
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  
+  if (user?.role !== 'Directrice des études') {
     return <Navigate to="/dashboard" replace />;
   }
   
@@ -143,6 +164,71 @@ const App = () => (
                 <ValidatorRoute>
                   <ValidationDetailPage />
                 </ValidatorRoute>
+              </ProtectedRoute>
+            } />
+            
+            {/* Routes d'administration */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/users" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <UsersPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/departments" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <DepartmentsPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/filieres" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <FilieresPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/niveaux" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <NiveauxPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/semestres" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <SemestresPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/ues" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <UEPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/ecs" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <ECPage />
+                </AdminRoute>
               </ProtectedRoute>
             } />
             

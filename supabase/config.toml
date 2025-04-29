@@ -3,3 +3,7 @@ project_id = "gpxxuznyigvlndvzctzh"
 
 [functions.send-notification]
 verify_jwt = true
+
+[functions.admin-functions]
+verify_jwt = true
+

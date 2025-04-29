@@ -18,7 +18,12 @@ import {
   Settings,
   FileBarChart,
   User,
-  Users
+  Users,
+  Building,
+  Layers,
+  List,
+  Book,
+  Plus
 } from 'lucide-react';
 
 export function SideNav() {
@@ -96,19 +101,74 @@ export function SideNav() {
           <SidebarGroupLabel>Administration</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem className={isActive('/users') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
+              <SidebarMenuItem className={isActive('/admin') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
                 <SidebarMenuButton asChild>
-                  <Link to="/users">
+                  <Link to="/admin">
+                    <Settings className="h-4 w-4 mr-2" />
+                    <span>Tableau d'administration</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem className={isActive('/admin/users') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
+                <SidebarMenuButton asChild>
+                  <Link to="/admin/users">
                     <Users className="h-4 w-4 mr-2" />
                     <span>Utilisateurs</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem className={isActive('/settings') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
+              
+              <SidebarMenuItem className={isActive('/admin/departments') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
                 <SidebarMenuButton asChild>
-                  <Link to="/settings">
-                    <Settings className="h-4 w-4 mr-2" />
-                    <span>Paramètres</span>
+                  <Link to="/admin/departments">
+                    <Building className="h-4 w-4 mr-2" />
+                    <span>Départements</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem className={isActive('/admin/filieres') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
+                <SidebarMenuButton asChild>
+                  <Link to="/admin/filieres">
+                    <Layers className="h-4 w-4 mr-2" />
+                    <span>Filières</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem className={isActive('/admin/niveaux') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
+                <SidebarMenuButton asChild>
+                  <Link to="/admin/niveaux">
+                    <List className="h-4 w-4 mr-2" />
+                    <span>Niveaux</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem className={isActive('/admin/semestres') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
+                <SidebarMenuButton asChild>
+                  <Link to="/admin/semestres">
+                    <Clock className="h-4 w-4 mr-2" />
+                    <span>Semestres</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem className={isActive('/admin/ues') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
+                <SidebarMenuButton asChild>
+                  <Link to="/admin/ues">
+                    <Book className="h-4 w-4 mr-2" />
+                    <span>UEs</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem className={isActive('/admin/ecs') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}>
+                <SidebarMenuButton asChild>
+                  <Link to="/admin/ecs">
+                    <Plus className="h-4 w-4 mr-2" />
+                    <span>ECs</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
