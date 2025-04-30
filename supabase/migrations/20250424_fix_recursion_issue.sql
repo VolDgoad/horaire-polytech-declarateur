@@ -27,3 +27,39 @@ STABLE SECURITY DEFINER
 AS $$
   SELECT * FROM public.fiches;
 $$;
+
+-- Function to get all filieres
+CREATE OR REPLACE FUNCTION public.get_all_filieres()
+RETURNS SETOF filieres
+LANGUAGE sql
+STABLE SECURITY DEFINER
+AS $$
+  SELECT * FROM public.filieres;
+$$;
+
+-- Function to get all niveaux
+CREATE OR REPLACE FUNCTION public.get_all_niveaux()
+RETURNS SETOF niveaux
+LANGUAGE sql
+STABLE SECURITY DEFINER
+AS $$
+  SELECT * FROM public.niveaux;
+$$;
+
+-- Function to get all semestres
+CREATE OR REPLACE FUNCTION public.get_all_semestres()
+RETURNS SETOF semestres
+LANGUAGE sql
+STABLE SECURITY DEFINER
+AS $$
+  SELECT * FROM public.semestres;
+$$;
+
+-- Function to get all UEs
+CREATE OR REPLACE FUNCTION public.get_all_ues()
+RETURNS SETOF ue
+LANGUAGE sql
+STABLE SECURITY DEFINER
+AS $$
+  SELECT * FROM public.ue;
+$$;
