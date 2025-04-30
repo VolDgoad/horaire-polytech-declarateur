@@ -21,7 +21,7 @@ const AdminUserForm: React.FC<AdminUserFormProps> = ({ onClose, onSubmit, editUs
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
   const [role, setRole] = useState<UserRole>('Enseignant');
-  const [grade, setGrade] = useState<TeacherGrade | ''>('');
+  const [grade, setGrade] = useState<TeacherGrade | null>(null);
   const [departement, setDepartement] = useState('');
   const [password, setPassword] = useState('');
   const [departments, setDepartments] = useState<any[]>([]);
@@ -44,7 +44,7 @@ const AdminUserForm: React.FC<AdminUserFormProps> = ({ onClose, onSubmit, editUs
       setPrenom(editUser.prenom || '');
       setNom(editUser.nom || '');
       setRole(editUser.role || 'Enseignant');
-      setGrade(editUser.grade || '');
+      setGrade(editUser.grade || null);
       setDepartement(editUser.departement_id?.toString() || '');
     }
   }, [editUser]);
@@ -108,6 +108,10 @@ const AdminUserForm: React.FC<AdminUserFormProps> = ({ onClose, onSubmit, editUs
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGradeChange = (value: string) => {
+    setGrade(value as TeacherGrade);
   };
 
   return (
@@ -182,7 +186,10 @@ const AdminUserForm: React.FC<AdminUserFormProps> = ({ onClose, onSubmit, editUs
           {role === 'Enseignant' && (
             <div className="space-y-2">
               <Label htmlFor="grade">Grade</Label>
-              <Select value={grade} onValueChange={setGrade}>
+              <Select 
+                value={grade || ""} 
+                onValueChange={handleGradeChange}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un grade" />
                 </SelectTrigger>
